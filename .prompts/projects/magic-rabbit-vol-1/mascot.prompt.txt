@@ -1,0 +1,10 @@
+Use case: illustration-story
+Asset type: project-bound SaaS mascot and sticker preview asset
+Primary request: Create a polished cute but not childish white rabbit magician mascot for a Japanese SaaS called StampForge AI, suitable for LINE Creators Market oriented static sticker creation UI mockups.
+Subject: One original white rabbit character, black top hat with a small orange flower, orange magician cape, tiny magic wand, round friendly face, clean bold outline, high readability at small UI sizes.
+Style/medium: premium Japanese digital sticker illustration, clean vector-like raster, soft rounded forms, crisp ink outline, light orange accent, white and warm gray palette.
+Composition/framing: centered full-body mascot, square composition, generous padding, no crop, no background objects.
+Lighting/mood: bright, friendly, SaaS product polish, simple studio white background.
+Text: no text.
+Constraints: no LINE logo, no official brand marks, no official-service implication, no watermark, no Japanese text, no speech bubbles, no QR codes, no product ads.
+Avoid: realistic fur, complex background, harsh shadows, green official branding.

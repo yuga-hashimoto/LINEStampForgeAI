@@ -1,0 +1,10 @@
+Use case: illustration-story
+Asset type: project-bound character sheet image for SaaS dashboard preview
+Primary request: Create one clean character reference sheet image for a Japanese static sticker creation SaaS. The character is the same original white rabbit magician mascot: black top hat with orange band and orange flower, orange magician cape, tiny wand, round friendly face, bold black outline.
+Subject: One consistent white rabbit magician character shown in multiple reference poses: front full body, diagonal front, side view, back view, face close-up, 4 expressive face variations, 4 small pose variations, and a simple color palette swatch area.
+Style/medium: premium Japanese digital sticker illustration, clean vector-like raster, crisp outlines, soft orange accents, white and light gray product design feeling.
+Composition/framing: organized single sheet on a clean white background, no labels or text, no numbers, no headings, no annotations, no panels containing text; visually structured by spacing only.
+Lighting/mood: bright, clean, friendly, stable reference image.
+Text: no text anywhere in the image.
+Constraints: no LINE logo, no official brand marks, no official-service implication, no watermark, no speech bubbles, no QR codes, no advertising.
+Avoid: realistic fur, complex scenery, strong shadows, official green branding, any letters or Japanese characters.

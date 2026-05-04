@@ -1,0 +1,5 @@
+Use case: illustration-story
+Asset type: regenerated single sticker cell placeholder for MVP
+Primary request: Use the approved white rabbit magician mascot as a regenerated-cell placeholder while the Codex app-server worker integration is still in MVP mode.
+Text: no text.
+Constraints: no LINE logo, no official brand marks, no official-service implication, no watermark.

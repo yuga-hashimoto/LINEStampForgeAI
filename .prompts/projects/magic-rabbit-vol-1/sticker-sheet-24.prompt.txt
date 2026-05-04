@@ -1,0 +1,9 @@
+Use case: illustration-story
+Asset type: project-bound sticker sheet image for SaaS dashboard preview
+Primary request: Create a 24-cell static sticker sheet preview for a Japanese sticker creation SaaS using the same original white rabbit magician character. Each cell should show the rabbit in a different everyday expression or pose.
+Subject: White rabbit magician with black top hat with orange band and orange flower, orange cape, wand, clean bold outline. Include 24 separate sticker cells arranged as 6 columns x 4 rows. Poses include greeting, thanks, OK, apology, sleep, cheer, surprise, celebration, going out, coming home, checking, sharing, please, understood, great, rest, later, completed.
+Style/medium: premium Japanese digital sticker illustration, crisp outlines, high readability, orange accent, cute but professional.
+Composition/framing: 6x4 grid, each cell separated with generous white space, transparent-friendly simple white background, no cell borders required, each sticker independent and not touching neighboring cells.
+Text: no text, no letters, no Japanese phrases. Leave visual room where UI may overlay text separately.
+Constraints: no LINE logo, no official brand marks, no official-service implication, no watermark, no QR codes, no ads, no company logos.
+Avoid: realistic fur, complex backgrounds, hard shadows, official green branding, any written characters or speech bubbles.
