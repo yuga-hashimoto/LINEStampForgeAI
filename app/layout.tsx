@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { clerkPublishableKey, isClerkPublicConfigured } from "@/lib/auth-config";
 
 import "./globals.css";
 
@@ -16,11 +18,37 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const app = (
+    <>
+      <TooltipProvider delayDuration={120}>{children}</TooltipProvider>
+      <Toaster richColors position="top-right" />
+    </>
+  );
+
   return (
     <html lang="ja">
       <body>
-        <TooltipProvider delayDuration={120}>{children}</TooltipProvider>
-        <Toaster richColors position="top-right" />
+        {isClerkPublicConfigured() ? (
+          <ClerkProvider
+            afterSignOutUrl="/"
+            appearance={{
+              variables: {
+                colorPrimary: "#06c755",
+                colorText: "#171717",
+                borderRadius: "0.75rem",
+              },
+            }}
+            publishableKey={clerkPublishableKey}
+            signInFallbackRedirectUrl="/app"
+            signInUrl="/login"
+            signUpFallbackRedirectUrl="/app"
+            signUpUrl="/register"
+          >
+            {app}
+          </ClerkProvider>
+        ) : (
+          app
+        )}
       </body>
     </html>
   );

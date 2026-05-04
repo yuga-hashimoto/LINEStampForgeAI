@@ -232,6 +232,36 @@ try {
     throw new Error(`Generation job list failed: ${JSON.stringify(apiList)}`);
   }
 
+  const usageResult = await page.evaluate(async () => {
+    const response = await fetch("/api/usage", { cache: "no-store" });
+    return { status: response.status, json: await response.json() };
+  });
+
+  if (
+    usageResult.status !== 200 ||
+    !usageResult.json.usage ||
+    usageResult.json.environment?.authProvider !== "開発デモ"
+  ) {
+    throw new Error(`Usage API failed: ${JSON.stringify(usageResult)}`);
+  }
+
+  const checkoutResult = await page.evaluate(async () => {
+    const response = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planId: "standard-24" }),
+    });
+    return { status: response.status, json: await response.json() };
+  });
+
+  if (
+    checkoutResult.status !== 200 ||
+    checkoutResult.json.mode !== "demo" ||
+    !checkoutResult.json.url?.includes("/app/billing?checkout=demo&planId=standard-24")
+  ) {
+    throw new Error(`Checkout API demo fallback failed: ${JSON.stringify(checkoutResult)}`);
+  }
+
   if (errors.length > 0) {
     throw new Error(`Console/page errors: ${JSON.stringify(errors)}`);
   }
@@ -246,6 +276,8 @@ try {
         zipFilename,
         submissionPackToken: submissionPack.token,
         apiJobId: apiResult.json.job.id,
+        usageProvider: usageResult.json.environment.authProvider,
+        checkoutMode: checkoutResult.json.mode,
         consoleErrors: errors,
       },
       null,

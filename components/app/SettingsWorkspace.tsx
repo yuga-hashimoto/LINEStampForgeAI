@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -10,11 +10,56 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { UsageLedger } from "@/lib/usage-ledger";
+
+type UsageResponse = {
+  actor: {
+    displayName: string;
+    email?: string;
+    provider: "clerk" | "development";
+  };
+  usage: UsageLedger;
+  environment: {
+    authProvider: string;
+    stripeConfigured: boolean;
+    stripeWebhookConfigured: boolean;
+    storage: {
+      driver: "local" | "r2";
+      configured: boolean;
+      uploadStrategy: string;
+    };
+    codexAppServerCommand: string;
+  };
+};
 
 export function SettingsWorkspace() {
   const [studioName, setStudioName] = useState("Magic Rabbit Studio");
   const [contactEmail, setContactEmail] = useState("demo@stampforge.local");
   const [aiNotice, setAiNotice] = useState(true);
+  const [usage, setUsage] = useState<UsageResponse | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    void fetch("/api/usage", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: UsageResponse | null) => {
+        if (active && payload) {
+          setUsage(payload);
+          setStudioName(payload.actor.displayName);
+          setContactEmail(payload.actor.email ?? "demo@stampforge.local");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUsage(null);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -120,15 +165,53 @@ export function SettingsWorkspace() {
             <CardContent className="grid gap-4 md:grid-cols-3">
               <div className="rounded-xl border bg-zinc-50 p-5">
                 <p className="text-sm font-bold text-muted-foreground">生成クレジット</p>
-                <p className="mt-2 text-3xl font-black">12 / 20</p>
+                <p className="mt-2 text-3xl font-black">
+                  {usage
+                    ? `${usage.usage.generationCreditsUsed} / ${usage.usage.generationCreditsLimit}`
+                    : "読み込み中"}
+                </p>
               </div>
               <div className="rounded-xl border bg-zinc-50 p-5">
                 <p className="text-sm font-bold text-muted-foreground">セット書き出し</p>
-                <p className="mt-2 text-3xl font-black">1 / 1</p>
+                <p className="mt-2 text-3xl font-black">
+                  {usage ? `${usage.usage.exportUsed} / ${usage.usage.exportLimit}` : "読み込み中"}
+                </p>
               </div>
               <div className="rounded-xl border bg-zinc-50 p-5">
                 <p className="text-sm font-bold text-muted-foreground">追加生成</p>
-                <p className="mt-2 text-3xl font-black">0 / 10</p>
+                <p className="mt-2 text-3xl font-black">
+                  {usage
+                    ? `${usage.usage.extraGenerationUsed} / ${usage.usage.extraGenerationLimit}`
+                    : "読み込み中"}
+                </p>
+              </div>
+              <div className="rounded-xl border bg-white p-5 md:col-span-3">
+                <p className="text-sm font-black text-zinc-950">運用接続ステータス</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-4">
+                  {[
+                    ["Auth", usage?.environment.authProvider ?? "未確認"],
+                    ["Stripe", usage?.environment.stripeConfigured ? "接続済み" : "未設定"],
+                    [
+                      "Webhook",
+                      usage?.environment.stripeWebhookConfigured ? "接続済み" : "未設定",
+                    ],
+                    [
+                      "Storage",
+                      usage?.environment.storage.configured
+                        ? usage.environment.storage.driver
+                        : "未設定",
+                    ],
+                  ].map(([label, value]) => (
+                    <div className="rounded-lg bg-zinc-50 p-3" key={label}>
+                      <p className="text-xs font-bold text-muted-foreground">{label}</p>
+                      <p className="mt-1 text-sm font-black">{value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs font-medium leading-5 text-muted-foreground">
+                  画像生成はCodex app-serverの `$imagegen` をworker経由で実行します。現在の起動コマンド:
+                  {usage?.environment.codexAppServerCommand ?? "未確認"}
+                </p>
               </div>
               <Button asChild className="line-bg md:col-span-3">
                 <Link href="/app/billing">プランと購入内容を見る</Link>

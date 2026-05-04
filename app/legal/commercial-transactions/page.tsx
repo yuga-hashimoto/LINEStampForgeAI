@@ -32,7 +32,9 @@ export default function CommercialTransactionsPage() {
           },
           {
             title: "役務の提供時期",
-            body: ["決済完了後、対象プランの生成クレジットまたは書き出し枠を付与します。MVPでは実決済を行いません。"],
+            body: [
+              "Stripe接続環境では決済完了後、対象プランの生成クレジットまたは書き出し枠を付与します。ローカル開発環境ではデモCheckoutとして扱います。",
+            ],
           },
           {
             title: "返品・キャンセル",

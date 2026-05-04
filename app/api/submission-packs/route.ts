@@ -5,7 +5,9 @@ import {
   createSubmissionPackToken,
 } from "@/lib/submission-pack-store";
 import { buildSubmissionManifest } from "@/lib/submission-manifest";
+import { getCurrentActor } from "@/lib/server-auth";
 import type { StickerCount, SubmissionPackDraft } from "@/lib/types";
+import { consumeUsage } from "@/lib/usage-ledger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,6 +15,12 @@ export const runtime = "nodejs";
 const stickerCounts = new Set<StickerCount>([8, 16, 24, 32, 40]);
 
 export async function POST(request: NextRequest) {
+  const actor = await getCurrentActor();
+
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = (await request.json()) as Partial<SubmissionPackDraft>;
 
   if (!body.project?.id || !body.project.name || !stickerCounts.has(body.project.stickerCount)) {
@@ -45,6 +53,15 @@ export async function POST(request: NextRequest) {
     },
     { baseUrl, zipUrl }
   );
+
+  try {
+    await consumeUsage(actor.id, "export", 1);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Usage limit exceeded" },
+      { status: 402 }
+    );
+  }
 
   const pack = await createSubmissionPack(manifest, { token, ttlMinutes: 30 });
 

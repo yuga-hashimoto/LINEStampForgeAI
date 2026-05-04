@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { SignUp } from "@clerk/nextjs";
 
 import { AuthForm } from "@/components/auth/AuthForm";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { isClerkPublicConfigured } from "@/lib/auth-config";
 
 export const metadata: Metadata = {
   title: "無料で試す | StampForge AI",
@@ -14,7 +16,16 @@ export default function RegisterPage() {
       description="クレカ不要で、キャラクターシート起点のスタンプ制作パイプラインをすぐに確認できます。"
       title="無料で試す"
     >
-      <AuthForm mode="register" />
+      {isClerkPublicConfigured() ? (
+        <SignUp
+          fallbackRedirectUrl="/app"
+          forceRedirectUrl="/app"
+          routing="hash"
+          signInUrl="/login"
+        />
+      ) : (
+        <AuthForm mode="register" />
+      )}
     </AuthPageShell>
   );
 }

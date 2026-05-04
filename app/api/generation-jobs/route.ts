@@ -5,6 +5,8 @@ import {
   LocalJsonGenerationJobStore,
   type CreateGenerationJobInput,
 } from "@/packages/core/src";
+import { getCurrentActor } from "@/lib/server-auth";
+import { consumeUsage } from "@/lib/usage-ledger";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,12 +26,27 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const actor = await getCurrentActor();
+
+  if (!actor) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = (await request.json()) as Partial<CreateGenerationJobInput>;
 
   if (!body.projectId || !body.type || !body.input) {
     return NextResponse.json(
       { error: "projectId, type, and input are required" },
       { status: 400 }
+    );
+  }
+
+  try {
+    await consumeUsage(actor.id, "generation", getGenerationCreditCost(body));
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Usage limit exceeded" },
+      { status: 402 }
     );
   }
 
@@ -47,6 +64,27 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json({ job }, { status: 201 });
+}
+
+function getGenerationCreditCost(input: Partial<CreateGenerationJobInput>) {
+  if (input.type === "regenerate-sticker-cell") {
+    return 1;
+  }
+
+  if (input.type === "generate-character-sheet") {
+    return 3;
+  }
+
+  if (
+    input.type === "generate-sticker-sheet" &&
+    input.input &&
+    "stickerCount" in input.input &&
+    typeof input.input.stickerCount === "number"
+  ) {
+    return Math.max(2, Math.ceil(input.input.stickerCount / 8) * 2);
+  }
+
+  return 2;
 }
 
 function isKnownStatus(

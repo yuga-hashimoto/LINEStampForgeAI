@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, CreditCard, FileText } from "lucide-react";
 
 import { AppFrame } from "@/components/app/AppFrame";
+import { CheckoutButton } from "@/components/app/CheckoutButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export function BillingWorkspace() {
   return (
     <AppFrame
       active="設定"
-      description="単発売りと月額プランの利用状況を確認します。実決済は将来の決済基盤で接続します。"
+      description="単発売りと月額プランの利用状況を確認します。Stripe設定時はCheckout Sessionsへ接続します。"
       title="プランと利用量"
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -26,7 +27,7 @@ export function BillingWorkspace() {
             <div>
               <CardTitle className="text-xl font-black">現在の購入内容</CardTitle>
               <p className="mt-2 text-sm font-medium text-muted-foreground">
-                MVPではUI上の購入状態を表示します。生成回数、書き出し数、クレジット数の上限を明記します。
+                生成回数、書き出し数、クレジット数の上限を明記します。Stripe未設定のローカル環境ではデモCheckoutとして扱います。
               </p>
             </div>
             <Badge className="bg-green-100 text-green-700" variant="secondary">
@@ -46,6 +47,9 @@ export function BillingWorkspace() {
                 <Button asChild className="line-bg">
                   <Link href="/#pricing">他のプランを見る</Link>
                 </Button>
+                <CheckoutButton className="line-bg" planId="standard-24">
+                  Checkoutを開始
+                </CheckoutButton>
               </div>
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -69,8 +73,16 @@ export function BillingWorkspace() {
             </CardHeader>
             <CardContent>
               <p className="text-sm font-medium leading-7 text-muted-foreground">
-                フロントエンドMVPでは実決済を行いません。将来は決済プロバイダーで単発売りと月額プランを分けて接続します。
+                Stripe Checkout Sessionsで単発売りと月額プランを分けて接続します。Webhook受信後、購入内容に応じて利用量台帳を更新します。
               </p>
+              <div className="mt-4 grid gap-2">
+                <CheckoutButton className="line-bg" planId="creator-pro">
+                  Creator Proを申し込む
+                </CheckoutButton>
+                <CheckoutButton planId="extra-10" variant="outline">
+                  追加生成10回を購入
+                </CheckoutButton>
+              </div>
             </CardContent>
           </Card>
           <Card className="rounded-xl bg-white shadow-sm">

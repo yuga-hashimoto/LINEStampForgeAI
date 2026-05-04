@@ -31,8 +31,8 @@ export type ProductUpdate = {
 };
 
 export const appMetrics = [
-  { label: "今月の生成クレジット", value: "12 / 20", helper: "Creator Lite想定" },
-  { label: "書き出し可能セット", value: "1 / 1", helper: "単発売り購入にも対応" },
+  { label: "今月の生成クレジット", value: "台帳連携済み", helper: "APIで消費を記録" },
+  { label: "書き出し可能セット", value: "台帳連携済み", helper: "申請パック発行時に消費" },
   { label: "自動チェック通過", value: "12 / 12", helper: "デモプロジェクト" },
   { label: "ZIPサイズ目安", value: "3.2MB", helper: "60MB以内" },
 ];
@@ -128,13 +128,13 @@ export const helpFaqs: HelpFaq[] = [
 export const productUpdates: ProductUpdate[] = [
   {
     date: "2026-05-04",
-    title: "運用導線を追加",
-    description: "ログイン、登録、デモ、規約、プライバシー、ヘルプ、問い合わせ、アプリ内ホームを追加しました。",
+    title: "Auth・決済・利用量の接続口を追加",
+    description: "Clerk Auth、Stripe Checkout、利用量台帳、申請パック発行時の書き出し消費を追加しました。",
   },
   {
     date: "2026-05-03",
     title: "画像生成ジョブAPIの土台を追加",
-    description: "将来のOpenRouter / OpenAI Images接続に備え、ジョブ作成APIとworker境界を用意しました。",
+    description: "Codex app-serverのimagegenをworkerから扱うため、ジョブ作成APIとworker境界を用意しました。",
   },
   {
     date: "2026-05-02",
@@ -145,6 +145,9 @@ export const productUpdates: ProductUpdate[] = [
 
 export const productionChecklist = [
   "LPから登録・ログイン・デモ・料金・規約へ到達できる",
+  "Clerk設定時は外部Auth、未設定時は開発デモとして動く",
+  "Stripe Checkout Sessionsとwebhookの接続口がある",
+  "生成ジョブと申請パック発行で利用量台帳を消費する",
   "アプリ内ホームからプロジェクト一覧とデモ編集画面へ遷移できる",
   "利用規約、プライバシーポリシー、特商法表記のページを用意している",
   "Creators Market向けの注意事項と非公式サービス表記を複数箇所で明示している",

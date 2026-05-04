@@ -73,8 +73,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         </CardTitle>
         <p className="text-sm font-medium leading-6 text-muted-foreground">
           {isRegister
-            ? "デモ環境ではローカルセッションで、制作ダッシュボードをすぐに確認できます。"
-            : "登録済みのデモアカウント、または下のデモボタンで制作画面へ進めます。"}
+            ? "Clerk未設定の開発環境では、ローカルのデモセッションで制作ダッシュボードを確認できます。"
+            : "Clerk未設定の開発環境では、下のデモボタンで制作画面へ進めます。"}
         </p>
       </CardHeader>
       <CardContent>

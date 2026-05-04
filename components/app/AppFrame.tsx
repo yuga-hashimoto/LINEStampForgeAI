@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UserButton } from "@clerk/nextjs";
 import { Bell, HelpCircle, Search } from "lucide-react";
 
 import { AppMobileNav } from "@/components/dashboard/AppMobileNav";
 import { AppSidebar, type AppSidebarActiveItem } from "@/components/dashboard/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isClerkPublicConfigured } from "@/lib/auth-config";
 
 type AppFrameProps = {
   active: AppSidebarActiveItem;
@@ -51,6 +53,19 @@ export function AppFrame({
                   <Button size="icon" variant="outline" aria-label="通知">
                     <Bell aria-hidden="true" />
                   </Button>
+                  {isClerkPublicConfigured() ? (
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          avatarBox: "size-9",
+                        },
+                      }}
+                    />
+                  ) : (
+                    <span className="inline-flex h-9 items-center rounded-full border bg-green-50 px-3 text-xs font-black text-green-700">
+                      開発デモ
+                    </span>
+                  )}
                   {action}
                 </div>
               </div>
