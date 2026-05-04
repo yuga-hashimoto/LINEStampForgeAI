@@ -140,6 +140,45 @@ try {
   }
   await page.getByText("ダミーZIPを生成しました").waitFor();
 
+  const submissionPackPromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/submission-packs") &&
+      response.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: "Creators Market 出品アシスタントを使う" }).click();
+  const submissionPackResponse = await submissionPackPromise;
+  const submissionPack = await submissionPackResponse.json();
+  if (!submissionPack.manifestUrl || !submissionPack.token) {
+    throw new Error(`Submission pack response failed: ${JSON.stringify(submissionPack)}`);
+  }
+  await page.getByText("申請パックURLを発行済み").waitFor();
+  const submissionManifest = await page.evaluate(async (url) => {
+    const response = await fetch(url);
+    return { status: response.status, json: await response.json() };
+  }, submissionPack.manifestUrl);
+  if (
+    submissionManifest.status !== 200 ||
+    submissionManifest.json.projectId !== "magic-rabbit-vol-1" ||
+    submissionManifest.json.stickerType !== "static"
+  ) {
+    throw new Error(`Submission manifest failed: ${JSON.stringify(submissionManifest)}`);
+  }
+  const submissionZip = await page.evaluate(async (url) => {
+    const response = await fetch(url);
+    return {
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+      size: (await response.blob()).size,
+    };
+  }, submissionPack.zipUrl);
+  if (
+    submissionZip.status !== 200 ||
+    !submissionZip.contentType?.includes("application/zip") ||
+    submissionZip.size <= 0
+  ) {
+    throw new Error(`Submission ZIP failed: ${JSON.stringify(submissionZip)}`);
+  }
+
   const dashboardAssets = await getGeneratedImageStatus(page);
   if (dashboardAssets.length < 3 || dashboardAssets.some((asset) => !asset.ok)) {
     throw new Error(
@@ -205,6 +244,7 @@ try {
         dashboardGeneratedAssets: dashboardAssets.length,
         stickerCountsChecked,
         zipFilename,
+        submissionPackToken: submissionPack.token,
         apiJobId: apiResult.json.job.id,
         consoleErrors: errors,
       },

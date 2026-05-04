@@ -161,3 +161,54 @@ export type ExportZipResult = {
   blob: Blob;
   sizeMb: number;
 };
+
+export type SubmissionManifest = {
+  projectId: string;
+  stickerType: "static";
+  stickerCount: StickerCount;
+  title: {
+    ja: string;
+    en?: string;
+  };
+  description: {
+    ja: string;
+    en?: string;
+  };
+  creatorName: string;
+  copyright: string;
+  containsAiGeneratedContent: boolean;
+  zipUrl: string;
+  mainImageUrl?: string;
+  tabImageUrl?: string;
+  checks: {
+    png: boolean;
+    transparentBackground: boolean;
+    stickerSizeWithin370x320: boolean;
+    mainImage240x240: boolean;
+    tabImage96x74: boolean;
+    fileSizeWithin1MB: boolean;
+    zipWithin60MB: boolean;
+    evenPixels: boolean;
+    marginAround10px: boolean;
+    advertisingRisk: boolean;
+    rightsRisk: boolean;
+  };
+};
+
+export type SubmissionPackDraft = {
+  project: Project;
+  checks: CheckItem[];
+  title: SubmissionManifest["title"];
+  description: SubmissionManifest["description"];
+  creatorName: string;
+  copyright: string;
+  containsAiGeneratedContent: boolean;
+};
+
+export type SubmissionPackTokenResponse = {
+  token: string;
+  manifestUrl: string;
+  zipUrl: string;
+  expiresAt: string;
+  manifest: SubmissionManifest;
+};

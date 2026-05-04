@@ -1,0 +1,291 @@
+:root {
+  color-scheme: light;
+  --line: #06c755;
+  --line-dark: #05ad4a;
+  --ink: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --soft: #f3fff7;
+  --warning: #fff7d6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f7f8f7;
+  color: var(--ink);
+  font-family:
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "YuGothic",
+    "Noto Sans JP", "Meiryo", system-ui, sans-serif;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.hero {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.brand-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #b9f2cf;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--line-dark);
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(6, 199, 85, 0.14);
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--line-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.notice,
+.card,
+.mini-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.06);
+}
+
+.notice {
+  margin: 0;
+  padding: 12px;
+  background: #fffdf2;
+  color: #7a4d00;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mini-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.mini-card span,
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.mini-card strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.section-title {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.status-pill,
+.warning-pill {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.status-pill {
+  background: var(--soft);
+  color: var(--line-dark);
+}
+
+.warning-pill {
+  background: var(--warning);
+  color: #8a5800;
+}
+
+.url-input {
+  width: 100%;
+  min-height: 66px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.url-input:focus {
+  border-color: var(--line);
+  box-shadow: 0 0 0 3px rgba(6, 199, 85, 0.16);
+}
+
+.primary,
+.secondary,
+.ghost {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.primary {
+  background: var(--line);
+  color: #fff;
+}
+
+.primary:hover {
+  background: var(--line-dark);
+}
+
+.secondary {
+  border: 1px solid #b9f2cf;
+  background: #fff;
+  color: var(--line-dark);
+}
+
+.ghost {
+  min-height: 30px;
+  background: var(--soft);
+  color: var(--line-dark);
+  font-size: 12px;
+}
+
+.large {
+  min-height: 48px;
+}
+
+.field-list,
+.warning-list,
+.log-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.field-list li,
+.warning-list li,
+.log-list li {
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.field-list li {
+  display: grid;
+  gap: 4px;
+  background: #f9fafb;
+}
+
+.field-list strong {
+  color: var(--line-dark);
+  font-size: 11px;
+}
+
+.warning-list li {
+  background: #fff7d6;
+  color: #744100;
+  font-weight: 700;
+}
+
+.preview {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.preview div {
+  display: grid;
+  gap: 4px;
+}
+
+.preview dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.preview dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+}
+
+.log-list {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.log-list li {
+  background: #f9fafb;
+  color: #374151;
+}

@@ -9,12 +9,12 @@ type SlicedPreviewProps = {
 
 export function SlicedPreview({ stickerCount, items }: SlicedPreviewProps) {
   return (
-    <Card className="rounded-xl bg-white shadow-sm">
+    <Card className="min-w-0 rounded-xl bg-white shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-black">自動切り出しプレビュー（{stickerCount}個）</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="flex gap-3 overflow-x-auto pb-1">
+      <CardContent className="min-w-0 overflow-hidden">
+        <div className="flex w-full max-w-full gap-3 overflow-x-auto pb-1">
           {items.map((item) => (
             <div
               className="checkerboard flex size-16 shrink-0 items-center justify-center rounded-lg border p-1"

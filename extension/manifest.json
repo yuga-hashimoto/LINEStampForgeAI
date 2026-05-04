@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "StampForge AI Creators Market 出品アシスタント",
+  "description": "StampForge AIの申請パックを読み込み、Creators Marketでの入力作業をユーザー確認付きで補助します。",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "StampForge 出品アシスタント"
+  },
+  "background": {
+    "service_worker": "dist/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://creator.line.me/*"],
+      "js": ["dist/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["scripting", "activeTab", "storage", "sidePanel"],
+  "host_permissions": [
+    "https://creator.line.me/*",
+    "https://stampforge.ai/*",
+    "http://localhost:3000/*",
+    "http://localhost:3001/*"
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
+}

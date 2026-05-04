@@ -3,6 +3,8 @@ node_modules
 .next
 out
 dist
+!extension/dist/
+!extension/dist/*.js
 coverage
 .data
 .playwright-mcp
