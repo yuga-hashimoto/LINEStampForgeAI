@@ -1,43 +1,64 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Plus, WandSparkles } from "lucide-react";
-import { toast } from "sonner";
 
 import { AppFrame } from "@/components/app/AppFrame";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { recentProjects } from "@/lib/operational-data";
+import { getStatusLabel, getStoredProjectDrafts } from "@/lib/project-drafts";
+import { recentProjects, type RecentProject } from "@/lib/operational-data";
 
 const filters = ["すべて", "レビュー前", "下書き", "書き出し済み"] as const;
 
 export function ProjectsWorkspace() {
   const [filter, setFilter] = useState<(typeof filters)[number]>("すべて");
   const [query, setQuery] = useState("");
+  const [storedProjects, setStoredProjects] = useState<RecentProject[]>([]);
+
+  useEffect(() => {
+    const projects = getStoredProjectDrafts().map((project): RecentProject => ({
+      id: project.id,
+      name: project.name,
+      progress: "企画入力を保存済み",
+      statusLabel: getStatusLabel(project.status),
+      statusTone: project.status === "review_ready" ? "line" : project.status === "exported" ? "green" : "zinc",
+      stickerCount: project.stickerCount,
+      updatedAt: new Date(project.updatedAt).toLocaleDateString("ja-JP"),
+    }));
+
+    setStoredProjects(projects);
+  }, []);
 
   const projects = useMemo(
-    () =>
-      recentProjects.filter((project) => {
+    () => {
+      const storedIds = new Set(storedProjects.map((project) => project.id));
+      const mergedProjects = [
+        ...storedProjects,
+        ...recentProjects.filter((project) => !storedIds.has(project.id)),
+      ];
+
+      return mergedProjects.filter((project) => {
         const matchesFilter = filter === "すべて" || project.statusLabel === filter;
         const matchesQuery = project.name.toLowerCase().includes(query.trim().toLowerCase());
         return matchesFilter && matchesQuery;
-      }),
-    [filter, query]
+      });
+    },
+    [filter, query, storedProjects]
   );
 
   return (
     <AppFrame
       active="プロジェクト"
       action={
-        <Button
-          className="line-bg"
-          onClick={() => toast.info("新規作成フォームは次の実装対象です。デモ編集から開始できます")}
-        >
-          <Plus data-icon="inline-start" />
-          新規作成
+        <Button asChild className="line-bg">
+          <Link href="/app/projects/new">
+            <Plus data-icon="inline-start" />
+            新規作成
+          </Link>
         </Button>
       }
       description="スタンプ制作プロジェクトの状態、個数、書き出し状況を管理します。"
@@ -76,7 +97,7 @@ export function ProjectsWorkspace() {
           {projects.map((project) => (
             <Link
               className="flex min-h-52 flex-col rounded-xl border bg-zinc-50 p-5 transition hover:border-green-200 hover:bg-green-50/40"
-              href={project.id === "magic-rabbit-vol-1" ? "/app/projects/demo" : "/app/projects"}
+              href={project.id === "magic-rabbit-vol-1" ? "/app/projects/demo" : `/app/projects/${project.id}`}
               key={project.id}
             >
               <div className="flex items-start justify-between gap-3">

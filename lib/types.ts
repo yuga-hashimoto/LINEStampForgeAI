@@ -83,6 +83,35 @@ export type Project = {
   zipSizeEstimateMb: number;
 };
 
+export type ProjectCreationDraft = {
+  id: string;
+  name: string;
+  studioName: string;
+  status: ProjectStatus;
+  stickerCount: StickerCount;
+  textMode: TextMode;
+  characterType: string;
+  style: string;
+  colorTheme: string;
+  costumeAndProps: string;
+  personality: string;
+  usageScene: string;
+  title: {
+    ja: string;
+    en?: string;
+  };
+  description: {
+    ja: string;
+    en?: string;
+  };
+  creatorName: string;
+  copyright: string;
+  containsAiGeneratedContent: boolean;
+  phrases: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type GenerateCharacterSheetInput = {
   projectId: string;
   characterType: string;

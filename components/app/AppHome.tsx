@@ -5,6 +5,7 @@ import {
   FileArchive,
   FolderOpen,
   ShieldCheck,
+  Plus,
   WandSparkles,
 } from "lucide-react";
 
@@ -20,8 +21,8 @@ export function AppHome() {
       active="ダッシュボード"
       action={
         <Button asChild className="line-bg">
-          <Link href="/app/projects/demo">
-            制作を続ける
+          <Link href="/app/projects/new">
+            新規作成
             <ArrowRight data-icon="inline-end" />
           </Link>
         </Button>
@@ -53,7 +54,7 @@ export function AppHome() {
             {recentProjects.map((project) => (
               <Link
                 className="flex flex-col gap-3 rounded-xl border bg-zinc-50 p-4 transition hover:border-green-200 hover:bg-green-50/40 sm:flex-row sm:items-center sm:justify-between"
-                href={project.id === "magic-rabbit-vol-1" ? "/app/projects/demo" : "/app/projects"}
+                href={project.id === "magic-rabbit-vol-1" ? "/app/projects/demo" : `/app/projects/${project.id}`}
                 key={project.id}
               >
                 <div className="min-w-0">
@@ -92,6 +93,12 @@ export function AppHome() {
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <Button asChild className="justify-start line-bg">
+                <Link href="/app/projects/new">
+                  <Plus data-icon="inline-start" />
+                  新規プロジェクトを作成
+                </Link>
+              </Button>
+              <Button asChild className="justify-start" variant="outline">
                 <Link href="/app/projects/demo">
                   <FolderOpen data-icon="inline-start" />
                   デモプロジェクトを編集
