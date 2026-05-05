@@ -12,7 +12,7 @@ type AuthPageShellProps = {
 };
 
 const checklist = [
-  "24個スタンプのデモプロジェクト付き",
+  "24個スタンプのデモシート付き",
   "Creators Market向けチェックUIを確認可能",
   "クレジット上限と書き出し数を明示",
 ];

@@ -2,16 +2,24 @@ import { Info } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GeneratedAssetImage } from "@/components/ui/GeneratedAssetImage";
-import { StickerMock } from "@/components/ui/StickerMock";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { generatedAssetUrls } from "@/lib/generated-assets";
+import {
+  demoGeneratedAssetUrls,
+  getGeneratedProjectAssetUrls,
+} from "@/lib/generated-assets";
 import type { CharacterSheetItem } from "@/lib/types";
 
 type CharacterSheetCardProps = {
   items: CharacterSheetItem[];
+  projectId?: string;
+  assetVersion?: string | number | null;
 };
 
-export function CharacterSheetCard({ items }: CharacterSheetCardProps) {
+export function CharacterSheetCard({ items, projectId, assetVersion }: CharacterSheetCardProps) {
+  const assets = getGeneratedProjectAssetUrls(projectId);
+  const characterViewMap = assets.characterViews;
+  const versionSuffix = assetVersion ? `?v=${encodeURIComponent(String(assetVersion))}` : "";
+
   return (
     <Card className="rounded-xl bg-white shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between gap-3">
@@ -29,8 +37,9 @@ export function CharacterSheetCard({ items }: CharacterSheetCardProps) {
           <GeneratedAssetImage
             alt="白うさぎマジシャンのキャラクターシート"
             className="aspect-[3/2] w-full"
+            fallbackSrc={demoGeneratedAssetUrls.characterSheet}
             imageClassName="object-cover"
-            src={generatedAssetUrls.characterSheet}
+            src={`${assets.characterSheet}${versionSuffix}`}
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-3 2xl:grid-cols-6">
@@ -51,12 +60,16 @@ export function CharacterSheetCard({ items }: CharacterSheetCardProps) {
                 </div>
               ) : (
                 <div className="flex min-h-[122px] items-center justify-center rounded-lg border bg-white p-2">
-                  <StickerMock
-                    angle={item.angle as "front" | "diagonal" | "side" | "back" | "expressions"}
-                    className="min-h-[110px] p-1"
-                    phrase=""
-                    showText={false}
-                    variant="character"
+                  <GeneratedAssetImage
+                    alt={`${item.label}の実キャラクター参照`}
+                    className="h-[122px] w-full"
+                    fallbackSrc={
+                      demoGeneratedAssetUrls.characterViews[
+                        item.angle as keyof typeof demoGeneratedAssetUrls.characterViews
+                      ] ?? demoGeneratedAssetUrls.characterViews.front
+                    }
+                    imageClassName="object-contain"
+                    src={`${characterViewMap[item.angle as keyof typeof characterViewMap] ?? characterViewMap.front}${versionSuffix}`}
                   />
                 </div>
               )}

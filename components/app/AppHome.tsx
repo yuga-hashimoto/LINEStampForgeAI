@@ -3,9 +3,9 @@ import {
   ArrowRight,
   CheckCircle2,
   FileArchive,
-  FolderOpen,
   ShieldCheck,
   Plus,
+  Smile,
   WandSparkles,
 } from "lucide-react";
 
@@ -22,7 +22,7 @@ export function AppHome() {
       action={
         <Button asChild className="line-bg">
           <Link href="/app/projects/new">
-            新規作成
+            シート作成
             <ArrowRight data-icon="inline-end" />
           </Link>
         </Button>
@@ -45,7 +45,7 @@ export function AppHome() {
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <Card className="rounded-xl bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <CardTitle className="text-xl font-black">最近のプロジェクト</CardTitle>
+            <CardTitle className="text-xl font-black">最近のキャラクターシート</CardTitle>
             <Button asChild variant="outline">
               <Link href="/app/projects">すべて見る</Link>
             </Button>
@@ -95,13 +95,13 @@ export function AppHome() {
               <Button asChild className="justify-start line-bg">
                 <Link href="/app/projects/new">
                   <Plus data-icon="inline-start" />
-                  新規プロジェクトを作成
+                  キャラクターシートを作成
                 </Link>
               </Button>
               <Button asChild className="justify-start" variant="outline">
                 <Link href="/app/projects/demo">
-                  <FolderOpen data-icon="inline-start" />
-                  デモプロジェクトを編集
+                  <Smile data-icon="inline-start" />
+                  デモシートを編集
                 </Link>
               </Button>
               <Button asChild className="justify-start" variant="outline">

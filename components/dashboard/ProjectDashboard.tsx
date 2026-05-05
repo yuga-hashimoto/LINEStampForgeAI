@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { CharacterSheetCard } from "@/components/dashboard/CharacterSheetCard";
 import { CreatorsMarketCheckCard } from "@/components/dashboard/CreatorsMarketCheckCard";
 import { ExportPanel } from "@/components/dashboard/ExportPanel";
+import { GenerationStudioCard } from "@/components/dashboard/GenerationStudioCard";
 import { PhraseTemplateCard } from "@/components/dashboard/PhraseTemplateCard";
 import { ProjectHeader } from "@/components/dashboard/ProjectHeader";
 import { SlicedPreview } from "@/components/dashboard/SlicedPreview";
@@ -88,6 +89,7 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
   const [selectedPhrases, setSelectedPhrases] = useState<string[]>(
     phraseTemplateTexts.slice(0, getInitialProject(projectId).stickerCount)
   );
+  const [assetVersion, setAssetVersion] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [dialogInput, setDialogInput] = useState("");
 
@@ -158,7 +160,7 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
         });
       }
 
-      toast.success("プロジェクト名を更新しました");
+      toast.success("キャラクターシート名を更新しました");
     }
 
     if (dialog === "memo") {
@@ -185,7 +187,7 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
   const dialogCopy = {
     regenerate: {
       title: "特定コマを再生成",
-      description: "修正したいコマ番号と内容を入力してください。MVPではダミー処理として扱います。",
+      description: "修正したいコマ番号と内容を入力してください。生成ジョブとして順番に処理します。",
       placeholder: "例: 12番の表情をもっと笑顔にする",
       submit: "再生成する",
     },
@@ -209,8 +211,8 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
       submit: "確認しました",
     },
     rename: {
-      title: "プロジェクト名を編集",
-      description: "一覧、申請パック、編集画面で使うプロジェクト名を更新します。",
+      title: "キャラクターシート名を編集",
+      description: "一覧、申請パック、編集画面で使うキャラクターシート名を更新します。",
       placeholder: "例: 魔法うさぎスタンプ Vol.2",
       submit: "更新する",
     },
@@ -244,12 +246,12 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
       colorTheme: "白、黒、緑、ピンク、オレンジ",
       costumeAndProps: "シルクハット、マント、星のステッキ",
       personality: "明るく丁寧。日常会話で使いやすい表情が多い。",
-      usageScene: "既存プロジェクトを複製して、セリフや構成を調整する制作フロー",
+      usageScene: "既存キャラクターシートを複製して、セリフや構成を調整する制作フロー",
       title: {
         ja: duplicateName,
       },
       description: {
-        ja: "複製したプロジェクトです。Creators Market向けの説明文を編集してから書き出してください。",
+        ja: "複製したキャラクターシートです。Creators Market向けの説明文を編集してから書き出してください。",
       },
       creatorName: project.studioName,
       copyright: `© ${project.studioName}`,
@@ -260,7 +262,7 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
     };
 
     saveProjectDraft(draft);
-    toast.success("プロジェクトを複製しました");
+    toast.success("キャラクターシートを複製しました");
     router.push(`/app/projects/${draft.id}`);
   };
 
@@ -294,13 +296,24 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
               setDialog("memo");
             }}
           />
-          <AppMobileNav active="プロジェクト" />
+          <AppMobileNav active="キャラクターシート" />
           <WorkflowStepper steps={mockWorkflowSteps} />
 
           <main className="grid gap-6 px-5 pb-8 xl:grid-cols-[minmax(0,1fr)_minmax(480px,0.95fr)] xl:px-8">
             <section className="flex min-w-0 flex-col gap-5">
+              <GenerationStudioCard
+                onAssetsUpdated={() => setAssetVersion(String(Date.now()))}
+                phrases={previewItems.map((item) => item.phrase)}
+                project={currentProject}
+                stickerCount={stickerCount}
+                textMode={textMode}
+              />
               <div id="character-sheet">
-                <CharacterSheetCard items={mockCharacterSheet} />
+                <CharacterSheetCard
+                  assetVersion={assetVersion}
+                  items={mockCharacterSheet}
+                  projectId={currentProject.id}
+                />
               </div>
               <div className="grid gap-5 2xl:grid-cols-[0.95fr_1.3fr]">
                 <StickerConfigCard value={stickerCount} onChange={setStickerCount} />
@@ -320,9 +333,19 @@ export function ProjectDashboard({ projectId = "demo" }: ProjectDashboardProps) 
 
             <aside className="flex min-w-0 flex-col gap-5 xl:sticky xl:top-28 xl:self-start">
               <div id="sticker-set">
-                <StickerSheetPreview items={previewItems} stickerCount={stickerCount} />
+                <StickerSheetPreview
+                  assetVersion={assetVersion}
+                  items={previewItems}
+                  projectId={currentProject.id}
+                  stickerCount={stickerCount}
+                />
               </div>
-              <SlicedPreview items={previewItems} stickerCount={stickerCount} />
+              <SlicedPreview
+                assetVersion={assetVersion}
+                items={previewItems}
+                projectId={currentProject.id}
+                stickerCount={stickerCount}
+              />
               <div id="export">
                 <ExportPanel checks={mockCheckResults} phrases={mockStickerPhrases} project={currentProject} />
               </div>

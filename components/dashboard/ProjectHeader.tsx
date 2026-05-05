@@ -43,7 +43,7 @@ export function ProjectHeader({
               type="button"
             >
               <Edit3 aria-hidden="true" />
-              <span className="sr-only">プロジェクト名を編集</span>
+              <span className="sr-only">キャラクターシート名を編集</span>
             </button>
             <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700" variant="outline">
               {statusLabel}
@@ -76,7 +76,7 @@ export function ProjectHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={onDuplicateProject}>プロジェクトを複製</DropdownMenuItem>
+                <DropdownMenuItem onSelect={onDuplicateProject}>キャラクターシートを複製</DropdownMenuItem>
                 <DropdownMenuItem onSelect={onCopyPreviewUrl}>プレビューURLをコピー</DropdownMenuItem>
                 <DropdownMenuItem onSelect={onOpenMemo}>制作メモを開く</DropdownMenuItem>
               </DropdownMenuGroup>

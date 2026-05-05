@@ -36,7 +36,7 @@ export default function DemoPage() {
             </h1>
             <p className="mt-5 text-base font-medium leading-8 text-zinc-700">
               キャラクターシート生成からスタンプセット生成、自動スライス、Creators Market向けチェック、
-              ZIP書き出しまでを、デモプロジェクトでそのまま操作できます。
+              ZIP書き出しまでを、デモシートでそのまま操作できます。
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button asChild className="line-bg" size="lg">

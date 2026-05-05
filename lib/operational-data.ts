@@ -33,7 +33,7 @@ export type ProductUpdate = {
 export const appMetrics = [
   { label: "今月の生成クレジット", value: "台帳連携済み", helper: "APIで消費を記録" },
   { label: "書き出し可能セット", value: "台帳連携済み", helper: "申請パック発行時に消費" },
-  { label: "自動チェック通過", value: "12 / 12", helper: "デモプロジェクト" },
+  { label: "自動チェック通過", value: "12 / 12", helper: "デモシート" },
   { label: "ZIPサイズ目安", value: "3.2MB", helper: "60MB以内" },
 ];
 
@@ -139,7 +139,7 @@ export const productUpdates: ProductUpdate[] = [
   {
     date: "2026-05-02",
     title: "制作ダッシュボードMVP",
-    description: "スタンプ数切り替え、文字モード、自動チェック、ダミーZIP書き出しを実装しました。",
+    description: "スタンプ数切り替え、文字モード、自動チェック、PNG ZIP書き出しを実装しました。",
   },
 ];
 
@@ -148,9 +148,9 @@ export const productionChecklist = [
   "Clerk設定時は外部Auth、未設定時は開発デモとして動く",
   "Stripe Checkout Sessionsとwebhookの接続口がある",
   "生成ジョブと申請パック発行で利用量台帳を消費する",
-  "アプリ内ホームからプロジェクト一覧とデモ編集画面へ遷移できる",
+  "アプリ内ホームからキャラクターシート一覧とデモ編集画面へ遷移できる",
   "利用規約、プライバシーポリシー、特商法表記のページを用意している",
   "Creators Market向けの注意事項と非公式サービス表記を複数箇所で明示している",
   "主要フォームは入力バリデーションと成功toastを返す",
-  "ZIP書き出しはmanifest.json入りのダミーZIPをダウンロードできる",
+  "ZIP書き出しはmanifest.jsonと生成済みPNG入りのZIPをダウンロードできる",
 ];

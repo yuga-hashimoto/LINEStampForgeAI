@@ -43,6 +43,7 @@ export class CodexAppServerClient {
   private readonly events = new EventEmitter();
   private buffer = "";
   private requestCounter = 0;
+  private initialized = false;
 
   constructor(private readonly options: CodexAppServerClientOptions) {}
 
@@ -60,6 +61,7 @@ export class CodexAppServerClient {
       env: process.env,
       stdio: "pipe",
     });
+    this.initialized = false;
 
     this.process.stdout.on("data", (chunk: Buffer) => {
       this.handleStdout(chunk.toString("utf8"));
@@ -80,29 +82,60 @@ export class CodexAppServerClient {
       }
       this.pendingRequests.clear();
       this.process = null;
+      this.initialized = false;
       this.events.emit("exit", { code, signal });
     });
   }
 
   async initialize(): Promise<void> {
-    await this.request("initialize", {
-      protocolVersion: "2026-05-04",
-      clientInfo: {
-        name: "line-stamp-forge-ai-worker",
-        version: "0.1.0",
-      },
-    });
-    this.notify("initialized", {});
+    if (this.initialized) {
+      return;
+    }
+
+    try {
+      await this.request("initialize", {
+        clientInfo: {
+          name: "line-stamp-forge-ai-worker",
+          title: "LINE Stamp Forge AI Worker",
+          version: "0.1.0",
+        },
+        capabilities: null,
+      });
+      this.notify("initialized", {});
+    } catch (error) {
+      if (error instanceof Error && /already initialized/i.test(error.message)) {
+        this.initialized = true;
+        return;
+      }
+
+      throw error;
+    }
+
+    this.initialized = true;
   }
 
   async startThread(options: StartThreadOptions): Promise<CodexThread> {
     const result = await this.request("thread/start", {
       cwd: options.cwd,
-      title: options.title,
-      metadata: options.metadata,
+      approvalPolicy: "never",
+      sandbox: "danger-full-access",
+      ephemeral: true,
+      sessionStartSource: "startup",
+      baseInstructions:
+        "You are running as an automated image generation worker for a local sticker production app. Follow the user prompt exactly, use image generation when requested, write the requested files to the workspace paths, and do not ask follow-up questions.",
+      developerInstructions: [
+        options.title ? `Task title: ${options.title}` : null,
+        options.metadata ? `Metadata: ${JSON.stringify(options.metadata)}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
     });
     const resultObject = asRecord(result);
-    const id = asString(resultObject.id) ?? asString(resultObject.threadId);
+    const threadObject = asRecord(resultObject.thread);
+    const id =
+      asString(threadObject.id) ??
+      asString(resultObject.id) ??
+      asString(resultObject.threadId);
 
     if (!id) {
       throw new Error("thread/start did not return a thread id");
@@ -115,15 +148,22 @@ export class CodexAppServerClient {
     const result = await this.request("turn/start", {
       threadId: options.threadId,
       cwd: options.cwd,
-      items: [
+      approvalPolicy: "never",
+      sandboxPolicy: { type: "dangerFullAccess" },
+      input: [
         {
           type: "text",
           text: options.prompt,
+          text_elements: [],
         },
       ],
     });
     const resultObject = asRecord(result);
-    const id = asString(resultObject.id) ?? asString(resultObject.turnId);
+    const turnObject = asRecord(resultObject.turn);
+    const id =
+      asString(turnObject.id) ??
+      asString(resultObject.id) ??
+      asString(resultObject.turnId);
 
     if (!id) {
       throw new Error("turn/start did not return a turn id");
@@ -157,6 +197,7 @@ export class CodexAppServerClient {
 
     const child = this.process;
     this.process = null;
+    this.initialized = false;
     child.kill("SIGTERM");
   }
 
@@ -267,14 +308,21 @@ function normalizeTurnResult(
 ): CodexTurnResult | null {
   const eventObject = asRecord(event);
   const params = asRecord(eventObject.params);
+  const turnObject = asRecord(params.turn);
   const method = asString(eventObject.method);
   const eventTurnId =
-    asString(params.turnId) ?? asString(params.id) ?? asString(eventObject.turnId);
+    asString(params.turnId) ??
+    asString(turnObject.id) ??
+    asString(params.id) ??
+    asString(eventObject.turnId);
 
   if (eventTurnId !== turnId) return null;
 
   const rawStatus =
-    asString(params.status) ?? asString(params.state) ?? asString(eventObject.status);
+    asString(params.status) ??
+    asString(turnObject.status) ??
+    asString(params.state) ??
+    asString(eventObject.status);
   const completed =
     method === "turn/completed" ||
     rawStatus === "completed" ||
@@ -290,7 +338,10 @@ function normalizeTurnResult(
     status: completed ? "completed" : canceled ? "canceled" : "failed",
     outputText: asString(params.outputText) ?? asString(params.text),
     generatedFiles: normalizeStringArray(params.generatedFiles),
-    errorMessage: asString(params.errorMessage) ?? asString(params.message),
+    errorMessage:
+      asString(params.errorMessage) ??
+      asString(params.message) ??
+      asString(asRecord(turnObject.error).message),
   };
 }
 

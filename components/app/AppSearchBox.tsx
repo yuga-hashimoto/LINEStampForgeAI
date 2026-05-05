@@ -8,8 +8,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 
 const searchableItems = [
-  { label: "魔法うさぎスタンプ Vol.1", category: "プロジェクト", href: "/app/projects/demo" },
-  { label: "プロジェクト一覧", category: "ワークスペース", href: "/app/projects" },
+  { label: "魔法うさぎスタンプ Vol.1", category: "キャラクターシート", href: "/app/projects/demo" },
+  { label: "キャラクターシート一覧", category: "ワークスペース", href: "/app/projects" },
   { label: "日常会話テンプレート", category: "テンプレート", href: "/app/templates" },
   { label: "プランと利用量", category: "設定", href: "/app/billing" },
   { label: "利用量と接続ステータス", category: "設定", href: "/app/settings" },
@@ -60,7 +60,7 @@ export function AppSearchBox() {
         onBlur={() => window.setTimeout(() => setIsFocused(false), 120)}
         onChange={(event) => setQuery(event.target.value)}
         onFocus={() => setIsFocused(true)}
-        placeholder="プロジェクトや書き出しを検索"
+        placeholder="キャラクターシートや書き出しを検索"
         value={query}
       />
       {isFocused ? (

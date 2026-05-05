@@ -1,13 +1,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StickerMock } from "@/components/ui/StickerMock";
+import { GeneratedAssetImage } from "@/components/ui/GeneratedAssetImage";
+import { getStickerCellUrl } from "@/lib/generated-assets";
 import type { StickerCount, StickerPreviewItem } from "@/lib/types";
 
 type SlicedPreviewProps = {
   stickerCount: StickerCount;
   items: StickerPreviewItem[];
+  projectId?: string;
+  assetVersion?: string | number | null;
 };
 
-export function SlicedPreview({ stickerCount, items }: SlicedPreviewProps) {
+export function SlicedPreview({
+  stickerCount,
+  items,
+  projectId,
+  assetVersion,
+}: SlicedPreviewProps) {
+  const versionSuffix = assetVersion ? `?v=${encodeURIComponent(String(assetVersion))}` : "";
+
   return (
     <Card className="min-w-0 rounded-xl bg-white shadow-sm">
       <CardHeader className="pb-3">
@@ -20,11 +30,12 @@ export function SlicedPreview({ stickerCount, items }: SlicedPreviewProps) {
               className="checkerboard flex size-16 shrink-0 items-center justify-center rounded-lg border p-1"
               key={item.id}
             >
-              <StickerMock
-                className="min-h-0 size-full bg-transparent p-0"
-                effect={item.effect}
-                phrase=""
-                showText={false}
+              <GeneratedAssetImage
+                alt={`切り出し済みスタンプ ${item.id}`}
+                className="size-full"
+                fallbackSrc={getStickerCellUrl(item.id)}
+                imageClassName="object-contain"
+                src={`${getStickerCellUrl(item.id, projectId)}${versionSuffix}`}
               />
             </div>
           ))}

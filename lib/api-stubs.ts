@@ -1,4 +1,7 @@
+import type JSZip from "jszip";
+
 import { mockCharacterSheet, mockCheckResults, mockStickerPhrases } from "@/lib/mock-data";
+import { getGeneratedProjectAssetUrls, getStickerCellUrl } from "@/lib/generated-assets";
 import { createStickerPreviewItems } from "@/lib/sticker-grid";
 import type {
   CheckItem,
@@ -92,34 +95,59 @@ export async function runCreatorsMarketChecks(
 export async function exportZip(input: ExportZipInput): Promise<ExportZipResult> {
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
+  const assets = getGeneratedProjectAssetUrls(input.project.id);
   const manifest = {
     service: "StampForge AI",
     projectId: input.project.id,
     projectName: input.project.name,
     stickerCount: input.project.stickerCount,
     textMode: input.project.textMode,
-    disclaimer: "This is a mock ZIP for MVP preview. This service is not an official LINE service.",
+    disclaimer:
+      "This service is not an official LINE service. Review approval is not guaranteed.",
     phrases: input.phrases.slice(0, input.project.stickerCount),
     checks: input.checks,
   };
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-  zip.file("README.txt", "StampForge AI MVP dummy export. Replace mock PNGs with generated assets before submission.");
-
-  Array.from({ length: input.project.stickerCount }, (_, index) => index + 1).forEach(
-    (index) => {
-      zip.file(
-        `stickers/${String(index).padStart(2, "0")}.txt`,
-        `Dummy sticker placeholder for cell ${index}.`
-      );
-    }
+  zip.file(
+    "README.txt",
+    [
+      "StampForge AI PNG export.",
+      "This package contains generated static sticker PNG files plus a manifest.",
+      "This service is not an official LINE service.",
+      "Review approval is not guaranteed. Check the latest Creators Market rules before submission.",
+    ].join("\n")
   );
+
+  await addPublicAsset(zip, "main.png", assets.main);
+  await addPublicAsset(zip, "tab.png", assets.tab);
+
+  for (const index of Array.from(
+    { length: input.project.stickerCount },
+    (_, itemIndex) => itemIndex + 1
+  )) {
+    await addPublicAsset(
+      zip,
+      `stickers/${String(index).padStart(2, "0")}.png`,
+      getStickerCellUrl(index, input.project.id)
+    );
+  }
 
   const blob = await zip.generateAsync({ type: "blob" });
 
   return {
-    fileName: `${input.project.id}-creators-market-mock.zip`,
+    fileName: `${input.project.id}-creators-market.zip`,
     blob,
     sizeMb: Number((blob.size / 1024 / 1024).toFixed(2)),
   };
+}
+
+async function addPublicAsset(zip: JSZip, path: string, url: string) {
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Generated PNG was not found: ${url}`);
+  }
+
+  zip.file(path, await response.arrayBuffer());
 }

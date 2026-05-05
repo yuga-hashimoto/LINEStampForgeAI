@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
 
-const base = "http://localhost:3001";
+const base = process.env.QA_BASE_URL ?? "http://localhost:3000";
 const screenshotDir = "output/playwright";
 
 await mkdir(screenshotDir, { recursive: true });
@@ -15,9 +15,22 @@ const page = await context.newPage();
 const errors = [];
 
 page.on("console", (message) => {
-  if (message.type() === "error") errors.push(message.text());
+  if (message.type() === "error") {
+    errors.push({
+      type: "console",
+      text: message.text(),
+      location: message.location(),
+    });
+  }
 });
-page.on("pageerror", (error) => errors.push(error.message));
+page.on("pageerror", (error) =>
+  errors.push({
+    type: "pageerror",
+    text: error.message,
+    url: page.url(),
+    stack: error.stack?.split("\n").slice(0, 4).join("\n"),
+  })
+);
 
 try {
   await assertRoute("/", "キャラクターシートから");
@@ -76,10 +89,10 @@ try {
   await page.getByRole("heading", { name: "魔法うさぎスタンプ Vol.1" }).waitFor();
 
   await assertRoute("/app", "ダッシュボード");
-  await assertRoute("/app/projects", "プロジェクト一覧");
+  await assertRoute("/app/projects", "キャラクターシート一覧");
   await assertRoute("/app/templates", "テンプレート");
   await page.getByRole("button", { name: "適用する" }).first().click();
-  await page.getByText("デモプロジェクトへ適用しました").waitFor();
+  await page.getByText("デモシートへ適用しました").waitFor();
   await assertRoute("/app/settings", "スタジオ情報");
   await page.getByRole("button", { name: "保存する" }).click();
   await page.getByText("設定を保存しました").waitFor();
@@ -146,7 +159,7 @@ try {
   if (!zipFilename.endsWith(".zip")) {
     throw new Error(`ZIP download did not start: ${zipFilename}`);
   }
-  await page.getByText("ダミーZIPを生成しました").waitFor();
+  await page.getByText("PNG ZIPを生成しました").waitFor();
 
   const submissionPackPromise = page.waitForResponse(
     (response) =>

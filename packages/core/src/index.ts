@@ -1,6 +1,7 @@
 export * from "./jobs/generation-job-service";
 export * from "./jobs/generation-job-store";
 export * from "./jobs/local-json-generation-job-store";
+export * from "./image-slicing";
 export * from "./paths";
 export * from "./prompts";
 export * from "./providers/codex-app-server-provider";

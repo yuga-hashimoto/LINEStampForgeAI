@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GeneratedAssetImage } from "@/components/ui/GeneratedAssetImage";
 import { Input } from "@/components/ui/input";
 import { exportZip } from "@/lib/api-stubs";
-import { generatedAssetUrls } from "@/lib/generated-assets";
+import { demoGeneratedAssetUrls, getGeneratedProjectAssetUrls } from "@/lib/generated-assets";
 import type {
   CheckItem,
   Project,
@@ -22,6 +22,7 @@ type ExportPanelProps = {
 };
 
 export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
+  const assets = getGeneratedProjectAssetUrls(project.id);
   const [titleJa, setTitleJa] = useState(project.name);
   const [titleEn, setTitleEn] = useState("Magic Rabbit Stickers Vol.1");
   const [descriptionJa, setDescriptionJa] = useState(
@@ -45,15 +46,20 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
   );
 
   const handleExport = async () => {
-    toast.info("MVPではダミーZIPを書き出します");
-    const result = await exportZip({ project, phrases, checks });
-    const url = URL.createObjectURL(result.blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = result.fileName;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    toast.success(`ダミーZIPを生成しました（${result.sizeMb}MB）`);
+    try {
+      toast.info("生成済みPNGをZIPにまとめています");
+      const result = await exportZip({ project, phrases, checks });
+      const url = URL.createObjectURL(result.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = result.fileName;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success(`PNG ZIPを生成しました（${result.sizeMb}MB）`);
+    } catch (error) {
+      toast.error("ZIP書き出しに失敗しました。先にスタンプ生成を実行してください。");
+      console.error(error);
+    }
   };
 
   const handleCreateSubmissionPack = async () => {
@@ -109,7 +115,8 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
             <GeneratedAssetImage
               alt="メイン画像用マスコット"
               className="size-full rounded-lg"
-              src={generatedAssetUrls.mascot}
+              fallbackSrc={demoGeneratedAssetUrls.main}
+              src={assets.main}
             />
           </div>
         </CardContent>
@@ -124,7 +131,8 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
             <GeneratedAssetImage
               alt="タブ画像用マスコット"
               className="size-full rounded-lg"
-              src={generatedAssetUrls.mascot}
+              fallbackSrc={demoGeneratedAssetUrls.tab}
+              src={assets.tab}
             />
           </div>
         </CardContent>
@@ -223,7 +231,7 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
             </div>
             <dl className="grid gap-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">プロジェクト</dt>
+                <dt className="text-muted-foreground">キャラクターシート</dt>
                 <dd className="font-bold text-right">{project.name}</dd>
               </div>
               <div className="flex justify-between gap-3">

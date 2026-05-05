@@ -2,7 +2,6 @@ import {
   Bell,
   CheckCircle2,
   FileArchive,
-  FolderOpen,
   Grid3X3,
   HelpCircle,
   Home,
@@ -20,8 +19,8 @@ import { mockStickerPhrases } from "@/lib/mock-data";
 
 const previewNav = [
   { label: "ダッシュボード", icon: Home, active: true },
-  { label: "プロジェクト", icon: FolderOpen },
-  { label: "キャラシート", icon: WandSparkles },
+  { label: "キャラクターシート", icon: WandSparkles },
+  { label: "参照画像", icon: WandSparkles },
   { label: "スタンプセット", icon: Grid3X3 },
   { label: "書き出し", icon: FileArchive },
   { label: "設定", icon: Settings },
@@ -62,7 +61,7 @@ export function ProductPreview() {
         <div className="flex min-w-0 flex-col">
           <div className="flex h-14 items-center justify-between border-b px-4">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-muted-foreground">プロジェクト / マジックラビット</p>
+              <p className="text-xs font-semibold text-muted-foreground">キャラクターシート / マジックラビット</p>
               <h2 className="truncate text-sm font-bold text-zinc-950">LINEスタンプシートプレビュー</h2>
             </div>
             <div className="hidden items-center gap-3 text-zinc-500 sm:flex">

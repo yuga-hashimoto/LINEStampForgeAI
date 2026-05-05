@@ -3,6 +3,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import {
+  deriveCharacterSheetViewAssets,
+  sliceStickerSheetAsset,
+} from "../image-slicing";
+import {
   getCharacterSheetAssetPath,
   getCharacterSheetPromptPath,
   getRegeneratedCellAssetPath,
@@ -63,6 +67,11 @@ export class CodexAppServerImageProvider
       outputPath,
       promptLogPath,
     });
+    await deriveCharacterSheetViewAssets({
+      cwd: this.options.cwd,
+      projectId: input.projectId,
+      sheetPath: outputPath,
+    });
 
     return this.createAsset({
       projectId: input.projectId,
@@ -86,6 +95,12 @@ export class CodexAppServerImageProvider
       prompt,
       outputPath,
       promptLogPath,
+    });
+    await sliceStickerSheetAsset({
+      cwd: this.options.cwd,
+      projectId: input.projectId,
+      stickerCount: input.stickerCount,
+      sheetPath: outputPath,
     });
 
     return this.createAsset({
@@ -143,29 +158,31 @@ export class CodexAppServerImageProvider
     await ensureParentDir(resolve(cwd, options.promptLogPath));
     await writeFile(resolve(cwd, options.promptLogPath), options.prompt);
 
-    await client.start();
-    await client.initialize();
-    const thread = await client.startThread({
-      cwd,
-      title: options.title,
-      metadata: {
-        projectId: options.projectId,
-        backend: "codex-app-server",
-      },
-    });
-    const turn = await client.startTurn({
-      threadId: thread.id,
-      prompt: options.prompt,
-      cwd,
-    });
-    const result = await client.waitForTurnCompletion(turn.id);
+    try {
+      await client.start();
+      await client.initialize();
+      const thread = await client.startThread({
+        cwd,
+        title: options.title,
+        metadata: {
+          projectId: options.projectId,
+          backend: "codex-app-server",
+        },
+      });
+      const turn = await client.startTurn({
+        threadId: thread.id,
+        prompt: options.prompt,
+        cwd,
+      });
+      const result = await client.waitForTurnCompletion(turn.id);
 
-    if (stopClientAfterEachRun) {
-      await client.stop();
-    }
-
-    if (result.status !== "completed") {
-      throw new Error(result.errorMessage ?? `Codex turn failed: ${turn.id}`);
+      if (result.status !== "completed") {
+        throw new Error(result.errorMessage ?? `Codex turn failed: ${turn.id}`);
+      }
+    } finally {
+      if (stopClientAfterEachRun) {
+        await client.stop();
+      }
     }
   }
 

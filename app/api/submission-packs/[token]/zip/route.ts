@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import type JSZip from "jszip";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import { getSubmissionPack } from "@/lib/submission-pack-store";
 
@@ -28,22 +31,37 @@ export async function GET(_request: Request, context: RouteContext) {
   zip.file(
     "README.txt",
     [
-      "StampForge AI submission pack mock export.",
+      "StampForge AI submission pack export.",
       "This service is not an official LINE service.",
       "Review approval is not guaranteed.",
-      "Replace placeholder files with generated PNG assets before real submission.",
+      "Check the latest Creators Market rules before submission.",
     ].join("\n")
   );
 
-  Array.from({ length: count }, (_, index) => index + 1).forEach((index) => {
-    zip.file(
-      `stickers/${String(index).padStart(2, "0")}.png.txt`,
-      `Placeholder for static sticker ${index}. Use an actual transparent PNG for production submission.`
-    );
-  });
+  try {
+    await addGeneratedPng(zip, "main.png", pack.manifest.projectId, "main.png");
+    await addGeneratedPng(zip, "tab.png", pack.manifest.projectId, "tab.png");
 
-  zip.file("main.png.txt", "Placeholder for 240 x 240 main image.");
-  zip.file("tab.png.txt", "Placeholder for 96 x 74 tab image.");
+    for (const index of Array.from({ length: count }, (_, itemIndex) => itemIndex + 1)) {
+      await addGeneratedPng(
+        zip,
+        `stickers/${String(index).padStart(2, "0")}.png`,
+        pack.manifest.projectId,
+        "stamps",
+        `${String(index).padStart(2, "0")}.png`
+      );
+    }
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "generated PNG assets were not found",
+      },
+      { status: 409 }
+    );
+  }
 
   const buffer = await zip.generateAsync({ type: "arraybuffer" });
 
@@ -54,4 +72,14 @@ export async function GET(_request: Request, context: RouteContext) {
       "Content-Disposition": `attachment; filename="${pack.manifest.projectId}-submission-pack.zip"`,
     },
   });
+}
+
+async function addGeneratedPng(
+  zip: JSZip,
+  zipPath: string,
+  projectId: string,
+  ...segments: string[]
+) {
+  const filePath = join(process.cwd(), "public", "generated", "projects", projectId, ...segments);
+  zip.file(zipPath, await readFile(filePath));
 }

@@ -90,7 +90,7 @@ export function NewProjectWorkspace() {
 
   const validations = useMemo(
     () => [
-      { label: "プロジェクト名", valid: projectName.trim().length >= 2 },
+      { label: "キャラクターシート名", valid: projectName.trim().length >= 2 },
       { label: "キャラクター種別", valid: characterType.trim().length >= 2 },
       { label: "用途・利用シーン", valid: usageScene.trim().length >= 10 },
       { label: "申請タイトル", valid: titleJa.trim().length >= 2 },
@@ -145,7 +145,7 @@ export function NewProjectWorkspace() {
     };
 
     saveProjectDraft(draft);
-    toast.success("新規プロジェクトを作成しました");
+    toast.success("キャラクターシートを作成しました");
     router.push(`/app/projects/${draft.id}`);
   };
 
@@ -156,14 +156,14 @@ export function NewProjectWorkspace() {
 
   return (
     <AppFrame
-      active="プロジェクト"
+      active="キャラクターシート"
       action={
         <Button asChild variant="outline">
           <Link href="/app/projects">一覧へ戻る</Link>
         </Button>
       }
-      description="企画、キャラクター条件、スタンプ構成、申請情報を入力して制作を開始します。"
-      title="新規プロジェクト作成"
+      description="まずキャラクターシートを作成し、その同じキャラから複数のスタンプセットへ展開します。"
+      title="キャラクターシート作成"
     >
       <form className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]" onSubmit={handleSubmit}>
         <section className="flex min-w-0 flex-col gap-6">
@@ -178,7 +178,7 @@ export function NewProjectWorkspace() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                プロジェクト名
+                キャラクターシート名
                 <Input
                   className="bg-white"
                   onChange={(event) => {
@@ -380,7 +380,7 @@ export function NewProjectWorkspace() {
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="rounded-xl border bg-zinc-50 p-4">
-                <p className="text-xs font-black text-muted-foreground">プロジェクト</p>
+                <p className="text-xs font-black text-muted-foreground">キャラクターシート</p>
                 <p className="mt-2 text-lg font-black text-zinc-950">{projectName || "未入力"}</p>
                 <p className="mt-1 text-sm font-semibold text-muted-foreground">{studioName || "制作名義未入力"}</p>
               </div>
@@ -441,7 +441,7 @@ export function NewProjectWorkspace() {
                 onClick={createProject}
                 type="button"
               >
-                プロジェクトを作成
+                キャラクターシートを作成
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </CardContent>

@@ -18,7 +18,7 @@ export function AiContentNoticeCard({ onDetailsClick }: AiContentNoticeCardProps
           <div>
             <h3 className="text-lg font-black text-zinc-950">AI生成コンテンツ</h3>
             <div className="mt-2 max-w-3xl text-sm font-semibold leading-7 text-zinc-700">
-              <p>本プロジェクトの画像は、AIによる支援を受けて生成・編集されたコンテンツを含みます。</p>
+              <p>本キャラクターシートとスタンプ画像は、AIによる支援を受けて生成・編集されたコンテンツを含みます。</p>
               <p>販売画面ではAI生成コンテンツに関する表記が表示されることがあります。</p>
               <p>本サービスは審査通過を保証するものではありません。</p>
             </div>

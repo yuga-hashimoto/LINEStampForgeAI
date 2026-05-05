@@ -55,7 +55,7 @@ export function TemplatesWorkspace() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <Button
                   className="line-bg"
-                  onClick={() => toast.success(`${template.name}をデモプロジェクトへ適用しました`)}
+                  onClick={() => toast.success(`${template.name}をデモシートへ適用しました`)}
                 >
                   <MessageSquareText data-icon="inline-start" />
                   適用する

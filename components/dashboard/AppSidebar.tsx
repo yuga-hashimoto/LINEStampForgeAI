@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ChevronDown,
   Download,
-  FolderOpen,
   Grid3X3,
   Home,
   MessageSquare,
@@ -15,8 +14,8 @@ import { generatedAssetUrls } from "@/lib/generated-assets";
 
 export const appSidebarMenuItems = [
   { label: "ダッシュボード", icon: Home, href: "/app" },
-  { label: "プロジェクト", icon: FolderOpen, href: "/app/projects" },
-  { label: "キャラシート", icon: Smile, href: "/app/projects/demo#character-sheet" },
+  { label: "キャラクターシート", icon: Smile, href: "/app/projects" },
+  { label: "参照画像", icon: Smile, href: "/app/projects/demo#character-sheet" },
   { label: "スタンプセット", icon: Grid3X3, href: "/app/templates" },
   { label: "レビュー", icon: MessageSquare, href: "/app/projects/demo#checks" },
   { label: "書き出し", icon: Download, href: "/app/projects/demo#export" },
@@ -29,7 +28,7 @@ type AppSidebarProps = {
   active?: AppSidebarActiveItem;
 };
 
-export function AppSidebar({ active = "プロジェクト" }: AppSidebarProps) {
+export function AppSidebar({ active = "キャラクターシート" }: AppSidebarProps) {
   return (
     <aside className="hidden min-h-screen border-r bg-white lg:flex lg:w-[248px] lg:flex-col">
       <div className="border-b p-6">

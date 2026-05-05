@@ -52,31 +52,31 @@ export function ProjectsWorkspace() {
 
   return (
     <AppFrame
-      active="プロジェクト"
+      active="キャラクターシート"
       action={
         <Button asChild className="line-bg">
           <Link href="/app/projects/new">
             <Plus data-icon="inline-start" />
-            新規作成
+            シート作成
           </Link>
         </Button>
       }
-      description="スタンプ制作プロジェクトの状態、個数、書き出し状況を管理します。"
-      title="プロジェクト"
+      description="作成したキャラクターシートを起点に、スタンプセットと書き出し状況を管理します。"
+      title="キャラクターシート"
     >
       <Card className="rounded-xl bg-white shadow-sm">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle className="text-xl font-black">プロジェクト一覧</CardTitle>
+              <CardTitle className="text-xl font-black">キャラクターシート一覧</CardTitle>
               <p className="mt-2 text-sm font-medium text-muted-foreground">
-                デモ以外のプロジェクトも、実運用を想定した一覧状態で確認できます。
+                1枚のキャラクターシートから、8個から40個までのスタンプ展開を管理できます。
               </p>
             </div>
             <Input
               className="max-w-sm bg-white"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="プロジェクト名で検索"
+              placeholder="キャラクターシート名で検索"
               value={query}
             />
           </div>
