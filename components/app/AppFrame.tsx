@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { UserButton } from "@clerk/nextjs";
-import { Bell, HelpCircle, Search } from "lucide-react";
+import { Bell, HelpCircle } from "lucide-react";
 
+import { AppSearchBox } from "@/components/app/AppSearchBox";
 import { AppMobileNav } from "@/components/dashboard/AppMobileNav";
 import { AppSidebar, type AppSidebarActiveItem } from "@/components/dashboard/AppSidebar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { isClerkPublicConfigured } from "@/lib/auth-config";
 
 type AppFrameProps = {
@@ -37,13 +37,7 @@ export function AppFrame({
                 <p className="mt-1 text-sm font-medium text-muted-foreground">{description}</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative min-w-0 sm:w-72">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <Input className="bg-white pl-10" placeholder="プロジェクトを検索" />
-                </div>
+                <AppSearchBox />
                 <div className="flex items-center gap-2">
                   <Button asChild size="icon" variant="outline">
                     <Link href="/help" aria-label="ヘルプ">

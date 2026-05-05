@@ -1,20 +1,33 @@
 import Link from "next/link";
-import { CheckCircle2, CreditCard, FileText } from "lucide-react";
+import { AlertCircle, CheckCircle2, CreditCard, FileText, Info } from "lucide-react";
 
 import { AppFrame } from "@/components/app/AppFrame";
 import { CheckoutButton } from "@/components/app/CheckoutButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getBillingPlan } from "@/lib/billing-plans";
 
 const planFeatures = [
-  "24個標準プラン購入済み",
+  "24個標準プラン利用中",
   "含まれる再生成: 5回",
   "PNG / ZIP書き出し",
   "Creators Market自動チェック",
 ];
 
-export function BillingWorkspace() {
+type CheckoutResult = "demo" | "success" | "cancel";
+
+type BillingWorkspaceProps = {
+  checkoutResult?: CheckoutResult;
+  checkoutPlanId?: string;
+};
+
+export function BillingWorkspace({
+  checkoutResult,
+  checkoutPlanId,
+}: BillingWorkspaceProps) {
+  const checkoutPlan = getBillingPlan(checkoutPlanId);
+
   return (
     <AppFrame
       active="設定"
@@ -22,6 +35,11 @@ export function BillingWorkspace() {
       title="プランと利用量"
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        {checkoutResult ? (
+          <div className="xl:col-span-2">
+            <CheckoutResultBanner result={checkoutResult} planName={checkoutPlan?.name} />
+          </div>
+        ) : null}
         <Card className="rounded-xl bg-white shadow-sm">
           <CardHeader className="flex flex-row items-start justify-between gap-3">
             <div>
@@ -104,5 +122,45 @@ export function BillingWorkspace() {
         </div>
       </div>
     </AppFrame>
+  );
+}
+
+function CheckoutResultBanner({
+  result,
+  planName,
+}: {
+  result: CheckoutResult;
+  planName?: string;
+}) {
+  const content = {
+    demo: {
+      icon: Info,
+      title: "デモCheckoutとして処理しました",
+      body: `${planName ?? "選択したプラン"}はStripe未設定のため、実決済なしの確認結果として表示しています。`,
+      className: "border-green-200 bg-green-50 text-green-900",
+    },
+    success: {
+      icon: CheckCircle2,
+      title: "Checkoutが完了しました",
+      body: `${planName ?? "選択したプラン"}の反映はStripe Webhook受信後に利用量台帳へ記録されます。`,
+      className: "border-green-200 bg-green-50 text-green-900",
+    },
+    cancel: {
+      icon: AlertCircle,
+      title: "Checkoutをキャンセルしました",
+      body: "購入処理は完了していません。必要な場合はもう一度Checkoutを開始してください。",
+      className: "border-amber-200 bg-amber-50 text-amber-950",
+    },
+  }[result];
+  const Icon = content.icon;
+
+  return (
+    <div className={`flex items-start gap-3 rounded-xl border p-4 ${content.className}`}>
+      <Icon className="mt-0.5 shrink-0" aria-hidden="true" />
+      <div>
+        <p className="text-sm font-black">{content.title}</p>
+        <p className="mt-1 text-sm font-semibold leading-6 opacity-80">{content.body}</p>
+      </div>
+    </div>
   );
 }

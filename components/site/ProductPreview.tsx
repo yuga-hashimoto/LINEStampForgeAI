@@ -29,9 +29,9 @@ const previewNav = [
 
 export function ProductPreview() {
   return (
-    <div className="panel-shadow rounded-2xl border bg-white p-3">
-      <div className="grid min-h-[460px] overflow-hidden rounded-xl border bg-white lg:grid-cols-[180px_1fr]">
-        <aside className="hidden border-r bg-zinc-50/70 p-4 lg:block">
+    <div className="panel-shadow min-w-0 rounded-2xl border bg-white p-3">
+      <div className="grid min-h-[460px] min-w-0 overflow-hidden rounded-xl border bg-white lg:grid-cols-[160px_minmax(0,1fr)]">
+        <aside className="hidden border-r bg-zinc-50/70 p-3 lg:block">
           <div className="mb-6 flex items-center gap-2">
             <span className="flex size-9 items-center justify-center rounded-lg border bg-white">
               <GeneratedAssetImage
@@ -47,8 +47,8 @@ export function ProductPreview() {
               <div
                 className={
                   item.active
-                    ? "flex items-center gap-3 rounded-lg bg-green-50 px-3 py-2 text-sm font-bold text-green-700"
-                    : "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-zinc-600"
+                    ? "flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700"
+                    : "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-zinc-600"
                 }
                 key={item.label}
               >
@@ -65,7 +65,7 @@ export function ProductPreview() {
               <p className="text-xs font-semibold text-muted-foreground">プロジェクト / マジックラビット</p>
               <h2 className="truncate text-sm font-bold text-zinc-950">LINEスタンプシートプレビュー</h2>
             </div>
-            <div className="flex items-center gap-3 text-zinc-500">
+            <div className="hidden items-center gap-3 text-zinc-500 sm:flex">
               <Bell aria-hidden="true" />
               <HelpCircle aria-hidden="true" />
               <Badge className="bg-green-100 text-green-700" variant="secondary">
@@ -108,7 +108,7 @@ export function ProductPreview() {
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 xl:grid-cols-2">
               <div className="rounded-xl border bg-white p-4">
                 <p className="text-xs font-bold text-muted-foreground">ステータス概要</p>
                 <div className="mt-3 flex items-center gap-2">

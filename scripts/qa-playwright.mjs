@@ -84,6 +84,14 @@ try {
   await page.getByRole("button", { name: "保存する" }).click();
   await page.getByText("設定を保存しました").waitFor();
   await assertRoute("/app/billing", "現在の購入内容");
+  await assertRoute(
+    "/app/billing?checkout=demo&planId=standard-24",
+    "デモCheckoutとして処理しました"
+  );
+  await page.getByLabel("ワークスペース内検索").fill("ZIP");
+  await page.getByRole("button", { name: "ZIP書き出し 書き出し" }).click();
+  await page.waitForURL(`${base}/app/projects/demo#export`);
+  await page.getByRole("button", { name: "ZIPを書き出す" }).waitFor();
 
   await page.goto(`${base}/app/projects/demo`, { waitUntil: "networkidle" });
   await page.getByRole("heading", { name: "魔法うさぎスタンプ Vol.1" }).waitFor();
@@ -190,6 +198,15 @@ try {
     path: `${screenshotDir}/dashboard-desktop.png`,
     fullPage: true,
   });
+
+  await page.setViewportSize({ width: 1280, height: 820 });
+  for (const route of [
+    "/",
+    "/app/projects/demo",
+    "/app/billing?checkout=demo&planId=standard-24",
+  ]) {
+    await assertRoute(route, route === "/" ? "キャラクターシートから" : undefined);
+  }
 
   await page.setViewportSize({ width: 390, height: 900 });
   for (const route of ["/", "/register", "/demo", "/app", "/app/projects/demo"]) {

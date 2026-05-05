@@ -9,7 +9,7 @@ const benefits = ["クレカ不要", "すぐに使える", "安心の日本語�
 export function HeroSection() {
   return (
     <section className="bg-white">
-      <div className="mx-auto grid max-w-[1480px] items-start gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:py-14">
+      <div className="mx-auto grid max-w-[1480px] items-start gap-10 px-5 py-12 sm:px-8 lg:py-14 xl:grid-cols-[minmax(620px,0.9fr)_minmax(0,1.1fr)]">
         <div className="flex flex-col items-start gap-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-700">
             <Sparkles data-icon="inline-start" />
@@ -17,11 +17,11 @@ export function HeroSection() {
           </div>
 
           <div className="flex flex-col gap-5">
-            <h1 className="text-4xl font-black leading-[1.16] text-zinc-950 sm:text-5xl lg:text-[58px]">
-              <span className="block sm:whitespace-nowrap">キャラクターシートから</span>
-              <span className="block sm:whitespace-nowrap">
+            <h1 className="text-4xl font-black leading-[1.16] text-zinc-950 sm:text-5xl lg:text-[52px] 2xl:text-[58px]">
+              <span className="block">キャラクターシートから</span>
+              <span className="block">
                 LINEスタンプを
-                <span className="line-green">一気に作成</span>
+                <span className="inline-block whitespace-nowrap line-green">一気に作成</span>
               </span>
             </h1>
             <p className="max-w-2xl text-base font-medium leading-8 text-zinc-700 sm:text-lg">

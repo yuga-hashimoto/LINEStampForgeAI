@@ -12,7 +12,7 @@ type AppMobileNavProps = {
 export function AppMobileNav({ active }: AppMobileNavProps) {
   return (
     <nav className="border-b bg-white px-4 py-3 lg:hidden" aria-label="アプリ内ナビゲーション">
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="scrollbar-hidden flex gap-2 overflow-x-auto pb-1">
         {appSidebarMenuItems.map((item) => (
           <Link
             aria-current={active === item.label ? "page" : undefined}

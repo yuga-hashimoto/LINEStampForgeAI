@@ -162,7 +162,7 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-5 pt-0 xl:grid-cols-[1fr_0.85fr]">
+        <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-5 pt-0 2xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="grid min-w-0 grid-cols-1 gap-3">
             <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
               <label className="grid min-w-0 gap-1 text-sm font-bold">
@@ -240,7 +240,7 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
               </div>
             </dl>
             <Button
-              className="h-12 rounded-xl line-bg font-black"
+              className="h-auto min-h-12 whitespace-normal rounded-xl line-bg px-4 py-3 text-center font-black leading-5"
               disabled={isCreatingPack}
               onClick={handleCreateSubmissionPack}
             >

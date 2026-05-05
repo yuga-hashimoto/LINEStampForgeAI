@@ -130,7 +130,7 @@ export function ProjectDashboard() {
           <AppMobileNav active="プロジェクト" />
           <WorkflowStepper steps={mockWorkflowSteps} />
 
-          <main className="grid gap-6 px-5 pb-8 xl:grid-cols-[minmax(520px,1fr)_minmax(560px,0.95fr)] xl:px-8">
+          <main className="grid gap-6 px-5 pb-8 xl:grid-cols-[minmax(0,1fr)_minmax(480px,0.95fr)] xl:px-8">
             <section className="flex min-w-0 flex-col gap-5">
               <div id="character-sheet">
                 <CharacterSheetCard items={mockCharacterSheet} />

@@ -117,6 +117,14 @@ select {
   background: #e9fff2;
 }
 
+.scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 .sticker-text {
   color: #111827;
   font-weight: 800;

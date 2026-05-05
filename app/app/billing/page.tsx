@@ -6,6 +6,21 @@ export const metadata: Metadata = {
   title: "プランと利用量 | StampForge AI",
 };
 
-export default function BillingPage() {
-  return <BillingWorkspace />;
+type BillingPageProps = {
+  searchParams?: Promise<{
+    checkout?: string;
+    planId?: string;
+  }>;
+};
+
+export default async function BillingPage({ searchParams }: BillingPageProps) {
+  const params = await searchParams;
+  const checkout =
+    params?.checkout === "demo" ||
+    params?.checkout === "success" ||
+    params?.checkout === "cancel"
+      ? params.checkout
+      : undefined;
+
+  return <BillingWorkspace checkoutPlanId={params?.planId} checkoutResult={checkout} />;
 }

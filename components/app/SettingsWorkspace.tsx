@@ -209,7 +209,7 @@ export function SettingsWorkspace() {
                   ))}
                 </div>
                 <p className="mt-3 text-xs font-medium leading-5 text-muted-foreground">
-                  画像生成はCodex app-serverの `$imagegen` をworker経由で実行します。現在の起動コマンド:
+                  画像生成はCodex app-serverの `$imagegen` をworker経由で実行します。現在の起動コマンド:{" "}
                   {usage?.environment.codexAppServerCommand ?? "未確認"}
                 </p>
               </div>
