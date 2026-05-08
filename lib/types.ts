@@ -21,6 +21,42 @@ export type StickerPhrase = {
   emotion: string;
   pose: string;
   prop?: string;
+  textColor?: string;
+  speechShape?: string;
+  speechStyle?: string;
+  characterMotion?: string;
+  directionNote?: string;
+};
+
+export type ReferenceImageAsset = {
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes?: number;
+};
+
+export type CharacterDesignDraft = {
+  characterType: string;
+  description: string;
+  referenceImages?: ReferenceImageAsset[];
+  referenceImageName?: string;
+  referenceImageUrl?: string;
+  referenceImageMimeType?: string;
+  referenceImageSizeBytes?: number;
+  artStyle: string;
+  lineWeight: string;
+  colorTheme: string;
+  costumeAndProps: string;
+  personality: string;
+  mustKeepFeatures: string;
+};
+
+export type StickerDirection = StickerPhrase & {
+  textColor: string;
+  speechShape: string;
+  speechStyle: string;
+  characterMotion: string;
+  directionNote: string;
 };
 
 export type CharacterSheetItem = {
@@ -91,6 +127,13 @@ export type ProjectCreationDraft = {
   stickerCount: StickerCount;
   textMode: TextMode;
   characterType: string;
+  referenceImages?: ReferenceImageAsset[];
+  referenceImageName?: string;
+  referenceImageUrl?: string;
+  referenceImageMimeType?: string;
+  referenceImageSizeBytes?: number;
+  characterDescription?: string;
+  mustKeepFeatures?: string;
   style: string;
   colorTheme: string;
   costumeAndProps: string;
@@ -120,6 +163,11 @@ export type GenerateCharacterSheetInput = {
   costumeAndProps: string;
   personality: string;
   mustKeepFeatures: string;
+  referenceImages?: ReferenceImageAsset[];
+  referenceImageName?: string;
+  referenceImageUrl?: string;
+  referenceImageMimeType?: string;
+  referenceImageSizeBytes?: number;
 };
 
 export type GenerateCharacterSheetResult = {

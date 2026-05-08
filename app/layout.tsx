@@ -26,7 +26,7 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="ja">
+    <html data-scroll-behavior="smooth" lang="ja">
       <body>
         {isClerkPublicConfigured() ? (
           <ClerkProvider

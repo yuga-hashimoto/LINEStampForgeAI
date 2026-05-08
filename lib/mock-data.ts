@@ -7,6 +7,8 @@ import type {
   StickerPhrase,
   SubscriptionPlan,
   WorkflowStep,
+  CharacterDesignDraft,
+  StickerDirection,
 } from "@/lib/types";
 
 export const mockProject: Project = {
@@ -20,12 +22,34 @@ export const mockProject: Project = {
 };
 
 export const mockWorkflowSteps: WorkflowStep[] = [
-  { id: 1, label: "企画入力", status: "done" },
-  { id: 2, label: "キャラシート生成", status: "done" },
-  { id: 3, label: "スタンプセット生成", status: "active" },
-  { id: 4, label: "自動切り出し", status: "pending" },
-  { id: 5, label: "ZIP書き出し", status: "pending" },
+  { id: 1, label: "キャラクター情報入力", status: "done" },
+  { id: 2, label: "キャラクター承認", status: "done" },
+  { id: 3, label: "スタンプ制作", status: "active" },
+  { id: 4, label: "切り出し・ZIP", status: "pending" },
 ];
+
+export const mockCharacterDesignDraft: CharacterDesignDraft = {
+  characterType: "白うさぎ",
+  description:
+    "日常会話で使いやすい、白いうさぎのマジシャン。やさしく丁寧で、少しお茶目な雰囲気。",
+  referenceImages: [
+    {
+      name: "magic-rabbit-reference.png",
+      url: "/generated/projects/magic-rabbit-vol-1/mascot.png",
+      mimeType: "image/png",
+    },
+  ],
+  referenceImageName: "magic-rabbit-reference.png",
+  referenceImageUrl: "/generated/projects/magic-rabbit-vol-1/mascot.png",
+  referenceImageMimeType: "image/png",
+  artStyle: "LINEスタンプ向けポップ",
+  lineWeight: "標準",
+  colorTheme: "白、黒、LINEグリーン、ピンク、オレンジ、黄色",
+  costumeAndProps: "黒いシルクハット、オレンジの花飾り、黒とオレンジのマント、星のステッキ",
+  personality: "明るく丁寧。あいさつ、感謝、確認、応援で使いやすい。",
+  mustKeepFeatures:
+    "白い耳、ピンクの耳内側、丸い黒目、黒い帽子、オレンジの花飾り、黒とオレンジのマントを必ず維持。",
+};
 
 export const mockCharacterSheet: CharacterSheetItem[] = [
   {
@@ -109,6 +133,31 @@ export const mockStickerPhrases: StickerPhrase[] = [
   { id: 39, text: "返信します", emotion: "連絡", pose: "ペンを持つ", prop: "✒️" },
   { id: 40, text: "また明日", emotion: "穏やか", pose: "月に手を振る", prop: "🌙" },
 ];
+
+export const mockStickerDirections: StickerDirection[] = mockStickerPhrases.map((phrase, index) => {
+  const textColors = ["#111111", "#06C755", "#F97316", "#EC4899", "#2563EB"];
+  const shapes = ["白縁文字", "ふきだし", "リボン", "丸ステッカー"];
+  const styles = ["太字ポップ", "丸ゴシック", "手書き風", "小さめ上品"];
+  const motions = [
+    "手を振る",
+    "おじぎ",
+    "杖を振る",
+    "ジャンプ",
+    "耳を下げる",
+    "胸に手を当てる",
+    "ドアから顔を出す",
+    "クラッカーを鳴らす",
+  ];
+
+  return {
+    ...phrase,
+    textColor: textColors[index % textColors.length],
+    speechShape: shapes[index % shapes.length],
+    speechStyle: styles[index % styles.length],
+    characterMotion: phrase.pose || motions[index % motions.length],
+    directionNote: `${phrase.emotion}がすぐ伝わる表情。${phrase.pose}動きで、文字は読みやすく大きめ。`,
+  };
+});
 
 export const mockCheckResults: CheckItem[] = [
   { id: "png", label: "PNG", status: "pass" },

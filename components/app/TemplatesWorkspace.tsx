@@ -13,10 +13,10 @@ import { templateSets } from "@/lib/operational-data";
 export function TemplatesWorkspace() {
   return (
     <AppFrame
-      active="スタンプセット"
+      active="キャラクターシート"
       action={
         <Button asChild className="line-bg">
-          <Link href="/app/projects/demo">
+          <Link href="/app/projects/demo/stamps">
             デモで使う
             <ArrowRight data-icon="inline-end" />
           </Link>

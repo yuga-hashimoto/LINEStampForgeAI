@@ -81,65 +81,62 @@ export async function sliceStickerSheetAsset(input: {
   }
 
   const grid = stickerGrids[input.stickerCount];
-  const cellWidth = Math.floor(metadata.width / grid.columns);
-  const cellHeight = Math.floor(metadata.height / grid.rows);
   const generatedDir = resolve(input.cwd, getProjectGeneratedDir(input.projectId));
   const stampDir = resolve(generatedDir, "stamps");
 
   await mkdir(stampDir, { recursive: true });
 
   for (const index of Array.from({ length: input.stickerCount }, (_, itemIndex) => itemIndex)) {
-    const row = Math.floor(index / grid.columns);
-    const column = index % grid.columns;
     const outputPath = resolve(stampDir, `${String(index + 1).padStart(2, "0")}.png`);
+    const bounds = getSafeCellBounds({
+      index,
+      columns: grid.columns,
+      rows: grid.rows,
+      sheetWidth: metadata.width,
+      sheetHeight: metadata.height,
+    });
 
-    await sharp(absoluteSheetPath)
-      .extract({
-        left: column * cellWidth,
-        top: row * cellHeight,
-        width: cellWidth,
-        height: cellHeight,
-      })
-      .resize(370, 320, {
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .png()
-      .toFile(outputPath);
-    await makeBorderBackgroundTransparent(outputPath, outputPath);
+    const extracted = await sharp(absoluteSheetPath).extract(bounds).png().toBuffer();
+    const transparent = await removeBorderBackground(extracted);
+    await renderContainedPng({
+      input: await trimTransparentImage(transparent),
+      outputPath,
+      width: 370,
+      height: 320,
+      maxContentWidth: 350,
+      maxContentHeight: 300,
+    });
   }
 
   const firstStickerPath = resolve(stampDir, "01.png");
-  await sharp(firstStickerPath)
-    .resize(240, 240, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-    })
-    .png()
-    .toFile(resolve(generatedDir, "main.png"));
-  await makeBorderBackgroundTransparent(
-    resolve(generatedDir, "main.png"),
-    resolve(generatedDir, "main.png")
-  );
-
-  await sharp(firstStickerPath)
-    .resize(96, 74, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
-    })
-    .png()
-    .toFile(resolve(generatedDir, "tab.png"));
-  await makeBorderBackgroundTransparent(
-    resolve(generatedDir, "tab.png"),
-    resolve(generatedDir, "tab.png")
-  );
+  await renderContainedPng({
+    input: firstStickerPath,
+    outputPath: resolve(generatedDir, "main.png"),
+    width: 240,
+    height: 240,
+    maxContentWidth: 220,
+    maxContentHeight: 220,
+  });
+  await renderContainedPng({
+    input: firstStickerPath,
+    outputPath: resolve(generatedDir, "tab.png"),
+    width: 96,
+    height: 74,
+    maxContentWidth: 86,
+    maxContentHeight: 64,
+  });
 }
 
 export async function makeBorderBackgroundTransparent(
   inputPath: string,
   outputPath: string
 ) {
-  const { data, info } = await sharp(inputPath)
+  const transparent = await removeBorderBackground(inputPath);
+  await sharp(transparent).png().toFile(outputPath);
+}
+
+async function removeBorderBackground(input: string | Buffer) {
+  const { data, info } = await sharp(input)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -195,7 +192,7 @@ export async function makeBorderBackgroundTransparent(
     enqueue(x, y - 1);
   }
 
-  await sharp(data, {
+  return sharp(data, {
     raw: {
       width,
       height,
@@ -203,7 +200,78 @@ export async function makeBorderBackgroundTransparent(
     },
   })
     .png()
-    .toFile(outputPath);
+    .toBuffer();
+}
+
+function getSafeCellBounds(input: {
+  index: number;
+  columns: number;
+  rows: number;
+  sheetWidth: number;
+  sheetHeight: number;
+}) {
+  const row = Math.floor(input.index / input.columns);
+  const column = input.index % input.columns;
+  const leftEdge = Math.round((input.sheetWidth * column) / input.columns);
+  const rightEdge = Math.round((input.sheetWidth * (column + 1)) / input.columns);
+  const topEdge = Math.round((input.sheetHeight * row) / input.rows);
+  const bottomEdge = Math.round((input.sheetHeight * (row + 1)) / input.rows);
+  const rawWidth = rightEdge - leftEdge;
+  const rawHeight = bottomEdge - topEdge;
+  const insetX = Math.max(2, Math.round(rawWidth * 0.035));
+  const insetY = Math.max(2, Math.round(rawHeight * 0.035));
+
+  return {
+    left: leftEdge + insetX,
+    top: topEdge + insetY,
+    width: Math.max(1, rawWidth - insetX * 2),
+    height: Math.max(1, rawHeight - insetY * 2),
+  };
+}
+
+async function trimTransparentImage(input: Buffer) {
+  try {
+    return await sharp(input).trim({ threshold: 8 }).png().toBuffer();
+  } catch {
+    return input;
+  }
+}
+
+async function renderContainedPng(input: {
+  input: string | Buffer;
+  outputPath: string;
+  width: number;
+  height: number;
+  maxContentWidth: number;
+  maxContentHeight: number;
+}) {
+  const resized = await sharp(input.input)
+    .ensureAlpha()
+    .resize(input.maxContentWidth, input.maxContentHeight, {
+      fit: "inside",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      withoutEnlargement: false,
+    })
+    .png()
+    .toBuffer();
+  const metadata = await sharp(resized).metadata();
+  const resizedWidth = metadata.width ?? input.maxContentWidth;
+  const resizedHeight = metadata.height ?? input.maxContentHeight;
+  const left = Math.max(0, Math.floor((input.width - resizedWidth) / 2));
+  const right = Math.max(0, input.width - resizedWidth - left);
+  const top = Math.max(0, Math.floor((input.height - resizedHeight) / 2));
+  const bottom = Math.max(0, input.height - resizedHeight - top);
+
+  await sharp(resized)
+    .extend({
+      left,
+      right,
+      top,
+      bottom,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toFile(input.outputPath);
 }
 
 function isRemovableBackground(data: Buffer, index: number) {

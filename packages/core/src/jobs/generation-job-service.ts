@@ -72,6 +72,21 @@ export class GenerationJobService {
     return this.processJob(job.id);
   }
 
+  async requeueInterruptedRunningJobs() {
+    const runningJobs = await this.store.list({ status: "running" });
+
+    for (const job of runningJobs) {
+      await this.store.update(job.id, {
+        status: "queued",
+        startedAt: undefined,
+        completedAt: undefined,
+        errorMessage: undefined,
+      });
+    }
+
+    return runningJobs.length;
+  }
+
   private async runProvider(job: GenerationJob): Promise<GeneratedAsset> {
     switch (job.type) {
       case "generate-character-sheet":

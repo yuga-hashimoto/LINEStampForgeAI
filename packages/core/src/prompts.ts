@@ -35,6 +35,7 @@ $imagegen
 - 注釈、見出し、説明文、番号を入れない
 - AI参照用としてノイズが少ないことを最優先
 - 同一キャラクターに見えることを最優先
+- 選択されたテイスト詳細を最優先で守る
 - 背景は白または極めてシンプル
 - 強い陰影、複雑な背景、過剰な演出は避ける
 - 公式LINEロゴや公式ブランド表現は入れない
@@ -42,10 +43,12 @@ $imagegen
 # キャラクター情報
 - キャラクター種別: {{character_type}}
 - テイスト: {{style}}
+- テイスト詳細: {{style_directive}}
 - 色味: {{color_theme}}
 - 衣装・小物: {{costume_and_props}}
 - 性格・雰囲気: {{personality}}
 - 絶対維持したい特徴: {{must_keep_features}}
+- アップロード参照画像: {{reference_image}}
 
 # 構成
 1枚の画像内に以下を整理して配置する。
@@ -108,6 +111,8 @@ $imagegen
 - テキストモード: {{text_mode}}
 - キャラクターシート参照: {{character_sheet_path}}
 - セリフ一覧: {{phrase_list}}
+- 目標キャンバス: {{target_canvas}}
+- 1コマの目標サイズ: 370×320px
 
 # 最重要事項
 - 参照キャラクターシートの見た目を厳守する
@@ -125,11 +130,16 @@ $imagegen
 - 24個: 6列 × 4行
 - 32個: 8列 × 4行
 - 40個: 8列 × 5行
+- 指定スタンプ数に対応するグリッドを画像全体いっぱいに均等配置する
+- 外周の余白、枠線、ガイド線、番号、見出しは入れない
+- 各コマの内部には約10px以上の余白を残し、隣コマへ絵や文字をはみ出させない
+- 各コマは独立した370×320px相当の比率で、切り出し後に単体スタンプとして成立させる
 
 # 文字ルール
 - text_mode が overlay の場合、画像内に文字を入れない
 - text_mode が ai または hybrid の場合、1コマに1セリフだけ入れる
-- 文字は黒、白縁、読みやすく、隣のコマにはみ出さない
+- セリフごとの文字色、形、スタイル指定を優先する
+- 指定がない場合は黒、白縁、読みやすく、隣のコマにはみ出さない
 
 # 禁止事項
 - 公式LINEロゴ
@@ -177,34 +187,97 @@ Image B は正しいキャラクターシートです。
 `;
 
 export function buildCharacterSheetCodexPrompt(input: GenerateCharacterSheetInput) {
+  const referenceImages = input.referenceImages?.length
+    ? input.referenceImages
+        .slice(0, 3)
+        .map((image, index) => `${index + 1}. ${image.name} (${image.url})`)
+        .join("\n")
+    : input.referenceImageUrl
+      ? `${input.referenceImageName ?? "reference image"} (${input.referenceImageUrl})`
+      : "なし";
+
   return renderTemplate(characterSheetCodexPromptTemplate, {
     output_path: getCharacterSheetAssetPath(input.projectId),
     prompt_log_path: getCharacterSheetPromptPath(input.projectId),
     character_type: sanitizePromptValue(input.characterType),
     style: sanitizePromptValue(input.style),
+    style_directive: sanitizePromptValue(getCharacterStyleDirective(input.style)),
     color_theme: sanitizePromptValue(input.colorTheme),
     costume_and_props: sanitizePromptValue(input.costumeAndProps),
     personality: sanitizePromptValue(input.personality),
     must_keep_features: sanitizePromptValue(input.mustKeepFeatures),
+    reference_image: sanitizePromptValue(referenceImages),
   }).trim();
 }
 
 export function buildStickerSheetCodexPrompt(input: GenerateStickerSheetInput) {
+  const grid = stickerGridByCount[input.stickerCount];
   const phraseList = input.phrases
     .slice(0, input.stickerCount)
-    .map((phrase) => sanitizePromptValue(phrase.text))
-    .join(" / ");
+    .map((phrase, index) =>
+      [
+        `${index + 1}. セリフ: ${sanitizePromptValue(phrase.text)}`,
+        `感情: ${sanitizePromptValue(phrase.emotion)}`,
+        `キャラクターの動き: ${sanitizePromptValue(phrase.characterMotion ?? phrase.pose)}`,
+        `文字色: ${sanitizePromptValue(phrase.textColor ?? "黒")}`,
+        `文字の形: ${sanitizePromptValue(phrase.speechShape ?? "白縁文字")}`,
+        `文字スタイル: ${sanitizePromptValue(phrase.speechStyle ?? "太字ポップ")}`,
+        `補足: ${sanitizePromptValue(phrase.directionNote ?? phrase.pose)}`,
+      ].join(" / ")
+    )
+    .join("\n");
 
   return renderTemplate(stickerSheetCodexPromptTemplate, {
     output_path: getStickerSheetAssetPath(input.projectId, input.stickerCount),
     prompt_log_path: getStickerSheetPromptPath(input.projectId, input.stickerCount),
     sticker_count: input.stickerCount,
     text_mode: input.textMode,
+    target_canvas: `${grid.columns * 370}×${grid.rows * 320}px（${grid.columns}列×${grid.rows}行）`,
     character_sheet_path:
       input.characterSheetPath ?? getCharacterSheetAssetPath(input.projectId),
     phrase_list: phraseList,
   }).trim();
 }
+
+function getCharacterStyleDirective(style: string) {
+  const artStyle = style.split("/")[0]?.trim();
+  const lineWeight = style.match(/線の太さ:\s*([^/]+)/)?.[1]?.trim();
+
+  const artStyleDirectives: Record<string, string> = {
+    "LINEスタンプ向けポップ":
+      "LINEスタンプ用途に合う、シンプルで読みやすいポップな2Dイラスト。大きい表情、太すぎない輪郭、フラット寄りの塗り。過剰な背景、写実、3Dレンダーは禁止。",
+    "ゆるかわ":
+      "ゆるくかわいい2Dキャラクター。丸い形、柔らかい表情、低めの情報量、親しみやすいデフォルメ。リアルな毛並み、強い陰影、硬いベクター感は禁止。",
+    "手描き風":
+      "手描き風を最優先。均一すぎない少し揺れた線、アナログペンで描いたような抜き、軽い塗りムラ、温かいラフさを残す。整いすぎたベクター線、3D、写真風、光沢の強いアニメ塗りは禁止。",
+    "アニメ調":
+      "明るいアニメ調の2Dキャラクター。整理された輪郭、はっきりした目と口、読みやすいフラット影。写実、3D、背景過多は禁止。",
+    "水彩ライト":
+      "淡い水彩ライト調。薄い色の重なり、やわらかい輪郭、白背景になじむ軽い質感。濃すぎる影、リアルな紙テクスチャ過多、写真風は禁止。",
+    "シンプル線画":
+      "シンプルな線画ベース。最小限の色、読みやすい輪郭、余白を活かしたキャラクター参照。複雑な装飾、塗り込みすぎ、背景過多は禁止。",
+  };
+
+  const lineWeightDirectives: Record<string, string> = {
+    "細め": "線は細め。ただしスタンプ化しても消えない読みやすい太さを保つ。",
+    "標準": "線は標準。小さく表示しても表情と輪郭が読み取れる太さにする。",
+    "太め": "線は太め。輪郭と表情をはっきり見せるが、子供っぽくなりすぎない。",
+  };
+
+  return [
+    artStyleDirectives[artStyle ?? ""] ?? "選択されたテイスト名を具体的な画風として反映する。",
+    lineWeightDirectives[lineWeight ?? ""] ?? "指定された線の太さを一貫して守る。",
+    "このテイストと線の太さが全ビュー、表情差分、ポーズ差分で変わらないようにする。",
+  ].join(" ");
+}
+
+const stickerGridByCount = {
+  8: { columns: 4, rows: 2 },
+  16: { columns: 4, rows: 4 },
+  24: { columns: 6, rows: 4 },
+  32: { columns: 8, rows: 4 },
+  40: { columns: 8, rows: 5 },
+} as const;
 
 export function buildRegenerateStickerCellCodexPrompt(
   input: RegenerateStickerCellInput

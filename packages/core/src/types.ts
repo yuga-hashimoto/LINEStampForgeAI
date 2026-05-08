@@ -32,6 +32,18 @@ export type StickerPhrase = {
   emotion: string;
   pose: string;
   prop?: string;
+  textColor?: string;
+  speechShape?: string;
+  speechStyle?: string;
+  characterMotion?: string;
+  directionNote?: string;
+};
+
+export type ReferenceImageAsset = {
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes?: number;
 };
 
 export type GenerateCharacterSheetInput = {
@@ -42,6 +54,11 @@ export type GenerateCharacterSheetInput = {
   costumeAndProps: string;
   personality: string;
   mustKeepFeatures: string;
+  referenceImages?: ReferenceImageAsset[];
+  referenceImageName?: string;
+  referenceImageUrl?: string;
+  referenceImageMimeType?: string;
+  referenceImageSizeBytes?: number;
 };
 
 export type GenerateStickerSheetInput = {

@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+
 import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -28,18 +29,16 @@ export function GeneratedAssetImage({
 
   return (
     <span className={cn("relative block overflow-hidden", className)}>
-      <Image
+      {/* Generated files are local mutable assets, so a plain img avoids Next Image localPatterns warnings for cache-busting URLs. */}
+      <img
         alt={alt}
         className={cn("size-full object-contain", imageClassName)}
-        fill
         onError={() => {
           if (fallbackSrc && resolvedSrc !== fallbackSrc) {
             setResolvedSrc(fallbackSrc);
           }
         }}
-        sizes="(max-width: 768px) 100vw, 50vw"
         src={resolvedSrc}
-        unoptimized
       />
     </span>
   );

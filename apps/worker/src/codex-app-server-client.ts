@@ -267,6 +267,15 @@ export class CodexAppServerClient {
     }
 
     if (message.method) {
+      if (message.method === "error") {
+        this.events.emit("codex-error", message.params);
+        this.events.emit("event", {
+          method: message.method,
+          params: message.params,
+        });
+        return;
+      }
+
       this.events.emit(message.method, message.params);
       this.events.emit("event", {
         method: message.method,

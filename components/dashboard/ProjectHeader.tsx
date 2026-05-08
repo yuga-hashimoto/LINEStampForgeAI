@@ -1,4 +1,5 @@
-import { Edit3, MoreVertical, RefreshCw, ScanLine, Type } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Edit3, Link2, MoreVertical, NotebookPen, ScanLine } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,9 @@ import {
 type ProjectHeaderProps = {
   projectName: string;
   statusLabel: string;
+  mode?: "character" | "stamps";
+  characterSheetHref?: string;
+  stampHref?: string;
   onActionDialog: (action: "regenerate" | "text") => void;
   onRenameProject: () => void;
   onOptimizePadding: () => void;
@@ -24,6 +28,9 @@ type ProjectHeaderProps = {
 export function ProjectHeader({
   projectName,
   statusLabel,
+  mode = "character",
+  characterSheetHref = "/app/projects/demo",
+  stampHref = "/app/projects/demo/stamps",
   onActionDialog,
   onRenameProject,
   onOptimizePadding,
@@ -55,18 +62,45 @@ export function ProjectHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={() => onActionDialog("regenerate")} variant="outline">
-            <RefreshCw data-icon="inline-start" />
-            特定コマを再生成
+          {mode === "stamps" ? (
+            <Button asChild variant="outline">
+              <Link href={characterSheetHref}>
+                <ArrowLeft data-icon="inline-start" />
+                シートに戻る
+              </Link>
+            </Button>
+          ) : null}
+          <Button onClick={onOpenMemo} variant="outline">
+            <NotebookPen data-icon="inline-start" />
+            制作メモ
           </Button>
-          <Button onClick={() => onActionDialog("text")} variant="outline">
-            <Type data-icon="inline-start" />
-            文字だけ修正
-          </Button>
-          <Button onClick={onOptimizePadding} variant="outline">
-            <ScanLine data-icon="inline-start" />
-            余白を最適化
-          </Button>
+          {mode === "character" ? (
+            <>
+              <Button onClick={onCopyPreviewUrl} variant="outline">
+                <Link2 data-icon="inline-start" />
+                URLをコピー
+              </Button>
+              <Button asChild className="line-bg">
+                <Link href={stampHref}>
+                  スタンプ作成
+                  <ArrowRight data-icon="inline-end" />
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => onActionDialog("regenerate")} variant="outline">
+                特定コマを再生成
+              </Button>
+              <Button onClick={() => onActionDialog("text")} variant="outline">
+                文字だけ修正
+              </Button>
+              <Button onClick={onOptimizePadding} variant="outline">
+                <ScanLine data-icon="inline-start" />
+                余白を最適化
+              </Button>
+            </>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="outline">
@@ -76,9 +110,19 @@ export function ProjectHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
+                {mode === "stamps" ? (
+                  <>
+                    <DropdownMenuItem onSelect={() => onActionDialog("regenerate")}>
+                      特定コマを再生成
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => onActionDialog("text")}>
+                      文字だけ修正
+                    </DropdownMenuItem>
+                  </>
+                ) : null}
+                <DropdownMenuItem onSelect={onOpenMemo}>制作メモ</DropdownMenuItem>
                 <DropdownMenuItem onSelect={onDuplicateProject}>キャラクターシートを複製</DropdownMenuItem>
-                <DropdownMenuItem onSelect={onCopyPreviewUrl}>プレビューURLをコピー</DropdownMenuItem>
-                <DropdownMenuItem onSelect={onOpenMemo}>制作メモを開く</DropdownMenuItem>
+                <DropdownMenuItem onSelect={onRenameProject}>名前を編集</DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>

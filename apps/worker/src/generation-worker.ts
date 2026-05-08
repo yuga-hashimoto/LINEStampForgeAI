@@ -28,6 +28,7 @@ export class GenerationWorker {
       stopClientAfterEachRun: true,
     });
     const service = new GenerationJobService(store, provider);
+    await service.requeueInterruptedRunningJobs();
 
     if (this.options.once) {
       await service.processNextQueuedJob();

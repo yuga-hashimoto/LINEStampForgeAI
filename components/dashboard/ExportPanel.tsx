@@ -19,9 +19,10 @@ type ExportPanelProps = {
   project: Project;
   phrases: StickerPhrase[];
   checks: CheckItem[];
+  assetsReady?: boolean;
 };
 
-export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
+export function ExportPanel({ project, phrases, checks, assetsReady = true }: ExportPanelProps) {
   const assets = getGeneratedProjectAssetUrls(project.id);
   const [titleJa, setTitleJa] = useState(project.name);
   const [titleEn, setTitleEn] = useState("Magic Rabbit Stickers Vol.1");
@@ -46,6 +47,11 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
   );
 
   const handleExport = async () => {
+    if (!assetsReady) {
+      toast.error("先にスタンプ生成を実行してください。");
+      return;
+    }
+
     try {
       toast.info("生成済みPNGをZIPにまとめています");
       const result = await exportZip({ project, phrases, checks });
@@ -53,8 +59,13 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = result.fileName;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
       anchor.click();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+        anchor.remove();
+      }, 0);
       toast.success(`PNG ZIPを生成しました（${result.sizeMb}MB）`);
     } catch (error) {
       toast.error("ZIP書き出しに失敗しました。先にスタンプ生成を実行してください。");
@@ -63,6 +74,11 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
   };
 
   const handleCreateSubmissionPack = async () => {
+    if (!assetsReady) {
+      toast.error("申請パックはスタンプ生成後に発行できます。");
+      return;
+    }
+
     setIsCreatingPack(true);
 
     try {
@@ -112,12 +128,18 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
         </CardHeader>
         <CardContent>
           <div className="checkerboard mx-auto flex aspect-square max-w-32 items-center justify-center rounded-xl border p-3">
-            <GeneratedAssetImage
-              alt="メイン画像用マスコット"
-              className="size-full rounded-lg"
-              fallbackSrc={demoGeneratedAssetUrls.main}
-              src={assets.main}
-            />
+            {assetsReady ? (
+              <GeneratedAssetImage
+                alt="メイン画像用マスコット"
+                className="size-full rounded-lg"
+                fallbackSrc={demoGeneratedAssetUrls.main}
+                src={assets.main}
+              />
+            ) : (
+              <span className="text-center text-xs font-black leading-5 text-muted-foreground">
+                生成後に表示
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -128,12 +150,18 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
         </CardHeader>
         <CardContent>
           <div className="checkerboard mx-auto flex aspect-[96/74] max-w-32 items-center justify-center rounded-xl border p-2">
-            <GeneratedAssetImage
-              alt="タブ画像用マスコット"
-              className="size-full rounded-lg"
-              fallbackSrc={demoGeneratedAssetUrls.tab}
-              src={assets.tab}
-            />
+            {assetsReady ? (
+              <GeneratedAssetImage
+                alt="タブ画像用マスコット"
+                className="size-full rounded-lg"
+                fallbackSrc={demoGeneratedAssetUrls.tab}
+                src={assets.tab}
+              />
+            ) : (
+              <span className="text-center text-xs font-black leading-5 text-muted-foreground">
+                生成後に表示
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -142,13 +170,14 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
         <CardContent className="flex h-full flex-col justify-center gap-4 p-5">
           <Button
             className="h-16 rounded-xl line-bg text-lg font-black shadow-lg shadow-green-500/20"
+            disabled={!assetsReady}
             onClick={handleExport}
           >
             <Download data-icon="inline-start" />
             ZIPを書き出す
           </Button>
           <p className="text-center text-sm font-semibold text-muted-foreground">
-            ZIPサイズの目安：{project.zipSizeEstimateMb}MB
+            {assetsReady ? `ZIPサイズの目安：${project.zipSizeEstimateMb}MB` : "スタンプ生成後にZIPを書き出せます"}
           </p>
         </CardContent>
       </Card>
@@ -240,7 +269,9 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">ZIPステータス</dt>
-                <dd className="font-bold text-green-700">生成可能</dd>
+                <dd className={assetsReady ? "font-bold text-green-700" : "font-bold text-amber-700"}>
+                  {assetsReady ? "生成可能" : "未生成"}
+                </dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">AI生成</dt>
@@ -249,7 +280,7 @@ export function ExportPanel({ project, phrases, checks }: ExportPanelProps) {
             </dl>
             <Button
               className="h-auto min-h-12 whitespace-normal rounded-xl line-bg px-4 py-3 text-center font-black leading-5"
-              disabled={isCreatingPack}
+              disabled={isCreatingPack || !assetsReady}
               onClick={handleCreateSubmissionPack}
             >
               <ShieldCheck data-icon="inline-start" />

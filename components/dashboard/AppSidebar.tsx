@@ -1,10 +1,8 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
-  Download,
-  Grid3X3,
   Home,
-  MessageSquare,
   Settings,
   Smile,
 } from "lucide-react";
@@ -12,23 +10,39 @@ import {
 import { GeneratedAssetImage } from "@/components/ui/GeneratedAssetImage";
 import { generatedAssetUrls } from "@/lib/generated-assets";
 
-export const appSidebarMenuItems = [
-  { label: "ダッシュボード", icon: Home, href: "/app" },
-  { label: "キャラクターシート", icon: Smile, href: "/app/projects" },
-  { label: "参照画像", icon: Smile, href: "/app/projects/demo#character-sheet" },
-  { label: "スタンプセット", icon: Grid3X3, href: "/app/templates" },
-  { label: "レビュー", icon: MessageSquare, href: "/app/projects/demo#checks" },
-  { label: "書き出し", icon: Download, href: "/app/projects/demo#export" },
-  { label: "設定", icon: Settings, href: "/app/settings" },
-] as const;
+export type AppSidebarActiveItem =
+  | "ダッシュボード"
+  | "キャラクターシート"
+  | "設定";
 
-export type AppSidebarActiveItem = (typeof appSidebarMenuItems)[number]["label"];
+type AppSidebarMenuItem = {
+  label: AppSidebarActiveItem;
+  icon: LucideIcon;
+  href: string;
+};
+
+export function getAppSidebarMenuItems(): AppSidebarMenuItem[] {
+  return [
+    { label: "ダッシュボード", icon: Home, href: "/app" },
+    {
+      label: "キャラクターシート",
+      icon: Smile,
+      href: "/app/projects",
+    },
+    { label: "設定", icon: Settings, href: "/app/settings" },
+  ];
+}
+
+export const appSidebarMenuItems = getAppSidebarMenuItems();
 
 type AppSidebarProps = {
   active?: AppSidebarActiveItem;
+  projectId?: string;
 };
 
 export function AppSidebar({ active = "キャラクターシート" }: AppSidebarProps) {
+  const menuItems = getAppSidebarMenuItems();
+
   return (
     <aside className="hidden min-h-screen border-r bg-white lg:flex lg:w-[248px] lg:flex-col">
       <div className="border-b p-6">
@@ -48,7 +62,7 @@ export function AppSidebar({ active = "キャラクターシート" }: AppSideba
       </div>
 
       <nav className="flex flex-1 flex-col gap-2 p-3">
-        {appSidebarMenuItems.map((item) => (
+        {menuItems.map((item) => (
           <Link
             aria-current={active === item.label ? "page" : undefined}
             className={

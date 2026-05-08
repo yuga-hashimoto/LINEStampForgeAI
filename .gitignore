@@ -9,6 +9,14 @@ coverage
 .data
 .playwright-mcp
 output/playwright
+public/uploads/
+public/generated/projects/*
+!public/generated/projects/magic-rabbit-vol-1/
+!public/generated/projects/magic-rabbit-vol-1/**
+.prompts/projects/*
+!.prompts/projects/magic-rabbit-vol-1/
+!.prompts/projects/magic-rabbit-vol-1/**
+tmp/
 .env
 .env*.local
 npm-debug.log*

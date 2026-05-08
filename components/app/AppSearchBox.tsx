@@ -13,8 +13,8 @@ const searchableItems = [
   { label: "日常会話テンプレート", category: "テンプレート", href: "/app/templates" },
   { label: "プランと利用量", category: "設定", href: "/app/billing" },
   { label: "利用量と接続ステータス", category: "設定", href: "/app/settings" },
-  { label: "Creators Market自動チェック", category: "レビュー", href: "/app/projects/demo#checks" },
-  { label: "ZIP書き出し", category: "書き出し", href: "/app/projects/demo#export" },
+  { label: "スタンプ作成", category: "スタンプ", href: "/app/projects/demo/stamps" },
+  { label: "ZIP書き出し", category: "書き出し", href: "/app/projects/demo/stamps" },
 ];
 
 export function AppSearchBox() {

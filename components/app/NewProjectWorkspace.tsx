@@ -1,157 +1,268 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
-  FileArchive,
-  Grid3X3,
-  ShieldCheck,
+  Loader2,
+  Palette,
   Sparkles,
+  Upload,
+  WandSparkles,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppFrame } from "@/components/app/AppFrame";
+import { ProductionFlow } from "@/components/app/ProductionFlow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { phraseTemplateTexts } from "@/lib/constants";
+import { ArtStyleReferencePreview, LineWeightReferencePreview } from "@/components/ui/StyleReferencePreview";
+import { characterArtStyles, lineWeightOptions, phraseTemplateTexts } from "@/lib/constants";
 import { createProjectId, saveProjectDraft } from "@/lib/project-drafts";
-import { templateSets } from "@/lib/operational-data";
-import type { ProjectCreationDraft, StickerCount, TextMode } from "@/lib/types";
-
-const stickerCounts: StickerCount[] = [8, 16, 24, 32, 40];
-
-const textModeOptions: Array<{
-  value: TextMode;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: "ai",
-    label: "AIに書かせる",
-    description: "イラストと文字をまとめて生成",
-  },
-  {
-    value: "overlay",
-    label: "あと乗せ",
-    description: "生成後に読みやすい日本語文字を合成",
-  },
-  {
-    value: "hybrid",
-    label: "ハイブリッド",
-    description: "AI文字をベースに必要箇所だけ修正",
-  },
-];
+import type { ProjectCreationDraft, ReferenceImageAsset } from "@/lib/types";
 
 const textareaClassName =
   "min-h-28 rounded-md border border-input bg-white px-3 py-3 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
-function uniquePhrases(values: string[]) {
-  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+type ReferenceImageUploadResponse = {
+  name: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  error?: string;
+};
+
+const maxReferenceImageBytes = 5 * 1024 * 1024;
+const maxReferenceImageCount = 3;
+
+function formatFileSize(bytes?: number) {
+  if (!bytes) {
+    return "";
+  }
+
+  return `${(bytes / 1024 / 1024).toFixed(2)}MB`;
 }
 
 export function NewProjectWorkspace() {
   const router = useRouter();
-  const [projectName, setProjectName] = useState("魔法うさぎスタンプ Vol.1");
-  const [studioName, setStudioName] = useState("Magic Rabbit Studio");
-  const [characterType, setCharacterType] = useState("白うさぎ");
-  const [style, setStyle] = useState("かわいいマジシャン風");
-  const [colorTheme, setColorTheme] = useState("白、黒、緑、ピンク、オレンジ");
-  const [costumeAndProps, setCostumeAndProps] = useState("シルクハット、マント、星のステッキ");
-  const [personality, setPersonality] = useState("明るく丁寧。日常会話で使いやすい表情が多い。");
-  const [usageScene, setUsageScene] = useState("友だち、家族、仕事連絡で使いやすいあいさつ・感謝・確認中心");
-  const [stickerCount, setStickerCount] = useState<StickerCount>(24);
-  const [textMode, setTextMode] = useState<TextMode>("hybrid");
-  const [templateId, setTemplateId] = useState("daily-24");
-  const [titleJa, setTitleJa] = useState("魔法うさぎスタンプ Vol.1");
-  const [titleEn, setTitleEn] = useState("Magic Rabbit Stickers Vol.1");
-  const [descriptionJa, setDescriptionJa] = useState(
-    "白うさぎのマジシャンが、毎日の会話で使いやすい気持ちを届けるスタンプセットです。"
-  );
-  const [descriptionEn, setDescriptionEn] = useState("A friendly magic rabbit sticker set for daily chats.");
-  const [creatorName, setCreatorName] = useState("Magic Rabbit Studio");
-  const [copyright, setCopyright] = useState("© Magic Rabbit Studio");
-  const [containsAiGeneratedContent, setContainsAiGeneratedContent] = useState(true);
-
-  const selectedTemplate = useMemo(
-    () => templateSets.find((template) => template.id === templateId) ?? templateSets[0],
-    [templateId]
-  );
-
-  const phrases = useMemo(
-    () => uniquePhrases([...(selectedTemplate?.phrases ?? []), ...phraseTemplateTexts]).slice(0, stickerCount),
-    [selectedTemplate, stickerCount]
-  );
+  const [sheetName, setSheetName] = useState("");
+  const [referenceImages, setReferenceImages] = useState<ReferenceImageAsset[]>([]);
+  const [referenceImageError, setReferenceImageError] = useState("");
+  const [isUploadingReferenceImage, setIsUploadingReferenceImage] = useState(false);
+  const [isCreatingSheet, setIsCreatingSheet] = useState(false);
+  const [characterDescription, setCharacterDescription] = useState("");
+  const [artStyle, setArtStyle] = useState("");
+  const [lineWeight, setLineWeight] = useState("");
+  const [mustKeepFeatures, setMustKeepFeatures] = useState("");
 
   const validations = useMemo(
     () => [
-      { label: "キャラクターシート名", valid: projectName.trim().length >= 2 },
-      { label: "キャラクター種別", valid: characterType.trim().length >= 2 },
-      { label: "用途・利用シーン", valid: usageScene.trim().length >= 10 },
-      { label: "申請タイトル", valid: titleJa.trim().length >= 2 },
-      { label: "説明文", valid: descriptionJa.trim().length >= 20 },
-      { label: "クリエイター名", valid: creatorName.trim().length >= 2 },
-      { label: "コピーライト", valid: copyright.trim().length >= 2 },
+      { label: "キャラクターシート名", valid: sheetName.trim().length >= 2 },
+      { label: "キャラクター概要", valid: characterDescription.trim().length >= 12 },
+      { label: "絵のタッチ", valid: artStyle.trim().length >= 2 },
+      { label: "線の太さ", valid: lineWeight.trim().length >= 1 },
+      { label: "維持する特徴", valid: mustKeepFeatures.trim().length >= 10 },
     ],
-    [characterType, copyright, creatorName, descriptionJa, projectName, titleJa, usageScene]
+    [artStyle, characterDescription, lineWeight, mustKeepFeatures, sheetName]
   );
 
-  const canSubmit = validations.every((item) => item.valid);
+  const canSubmit = validations.every((item) => item.valid) && !isUploadingReferenceImage && !isCreatingSheet;
+  const primaryReferenceImage = referenceImages[0];
+  const remainingReferenceImageSlots = maxReferenceImageCount - referenceImages.length;
 
-  const handleTemplateSelect = (id: string, count: StickerCount) => {
-    setTemplateId(id);
-    setStickerCount(count);
+  const handleReferenceImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+
+    if (!files.length) {
+      return;
+    }
+
+    setReferenceImageError("");
+
+    if (files.length > remainingReferenceImageSlots) {
+      const message = `参照画像は最大${maxReferenceImageCount}枚までです。あと${remainingReferenceImageSlots}枚追加できます。`;
+      setReferenceImageError(message);
+      toast.error(message);
+      event.target.value = "";
+      return;
+    }
+
+    const invalidTypeFile = files.find((file) => !["image/png", "image/jpeg", "image/webp"].includes(file.type));
+    if (invalidTypeFile) {
+      const message = "PNG、JPEG、WebPのいずれかをアップロードしてください。";
+      setReferenceImageError(message);
+      toast.error(message);
+      event.target.value = "";
+      return;
+    }
+
+    const oversizedFile = files.find((file) => file.size > maxReferenceImageBytes);
+    if (oversizedFile) {
+      const message = "参照画像は5MB以内にしてください。";
+      setReferenceImageError(message);
+      toast.error(message);
+      event.target.value = "";
+      return;
+    }
+
+    setIsUploadingReferenceImage(true);
+
+    try {
+      const uploadedImages = await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/reference-images", {
+            method: "POST",
+            body: formData,
+          });
+          const result = (await response.json()) as ReferenceImageUploadResponse;
+
+          if (!response.ok) {
+            throw new Error(result.error ?? "参照画像のアップロードに失敗しました。");
+          }
+
+          return {
+            name: result.name,
+            url: result.url,
+            mimeType: result.mimeType,
+            sizeBytes: result.sizeBytes,
+          } satisfies ReferenceImageAsset;
+        })
+      );
+
+      setReferenceImages((current) => [...current, ...uploadedImages].slice(0, maxReferenceImageCount));
+      toast.success(`参照画像を${uploadedImages.length}枚アップロードしました`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "参照画像のアップロードに失敗しました。";
+      setReferenceImageError(message);
+      toast.error(message);
+    } finally {
+      setIsUploadingReferenceImage(false);
+      event.target.value = "";
+    }
   };
 
-  const createProject = () => {
+  const removeReferenceImage = (url: string) => {
+    setReferenceImages((current) => current.filter((image) => image.url !== url));
+    setReferenceImageError("");
+  };
+
+  const createCharacterSheet = async () => {
     if (!canSubmit) {
       toast.error("未入力または短すぎる項目があります。赤いチェック項目を確認してください。");
       return;
     }
 
+    setIsCreatingSheet(true);
+
     const now = new Date().toISOString();
+    const trimmedSheetName = sheetName.trim();
+    const trimmedCharacterDescription = characterDescription.trim();
+    const trimmedMustKeepFeatures = mustKeepFeatures.trim();
+    const internalCreatorName = "Creator";
+    const characterLabel = trimmedSheetName.replace(/キャラクターシート$/, "").trim() || trimmedSheetName;
+    const sourcePolicy = referenceImages.length
+      ? "参照画像、キャラクター概要、維持する特徴に準拠"
+      : "キャラクター概要と維持する特徴に準拠";
     const draft: ProjectCreationDraft = {
-      id: createProjectId(projectName),
-      name: projectName.trim(),
-      studioName: studioName.trim(),
-      status: "draft",
-      stickerCount,
-      textMode,
-      characterType: characterType.trim(),
-      style: style.trim(),
-      colorTheme: colorTheme.trim(),
-      costumeAndProps: costumeAndProps.trim(),
-      personality: personality.trim(),
-      usageScene: usageScene.trim(),
+      id: createProjectId(trimmedSheetName),
+      name: trimmedSheetName,
+      studioName: internalCreatorName,
+      status: "generating",
+      stickerCount: 24,
+      textMode: "hybrid",
+      characterType: characterLabel,
+      referenceImages,
+      referenceImageName: primaryReferenceImage?.name,
+      referenceImageUrl: primaryReferenceImage?.url,
+      referenceImageMimeType: primaryReferenceImage?.mimeType,
+      referenceImageSizeBytes: primaryReferenceImage?.sizeBytes,
+      characterDescription: trimmedCharacterDescription,
+      mustKeepFeatures: trimmedMustKeepFeatures,
+      style: `${artStyle.trim()} / 線の太さ: ${lineWeight}`,
+      colorTheme: sourcePolicy,
+      costumeAndProps: sourcePolicy,
+      personality: trimmedCharacterDescription,
+      usageScene: "キャラクターシート作成から開始。スタンプ内容は専用のスタンプ作成画面で編集する。",
       title: {
-        ja: titleJa.trim(),
-        en: titleEn.trim() || undefined,
+        ja: trimmedSheetName,
       },
       description: {
-        ja: descriptionJa.trim(),
-        en: descriptionEn.trim() || undefined,
+        ja: `${trimmedSheetName}のキャラクターシートです。`,
       },
-      creatorName: creatorName.trim(),
-      copyright: copyright.trim(),
-      containsAiGeneratedContent,
-      phrases,
+      creatorName: internalCreatorName,
+      copyright: `© ${internalCreatorName}`,
+      containsAiGeneratedContent: true,
+      phrases: phraseTemplateTexts,
       createdAt: now,
       updatedAt: now,
     };
 
-    saveProjectDraft(draft);
-    toast.success("キャラクターシートを作成しました");
-    router.push(`/app/projects/${draft.id}`);
+    try {
+      saveProjectDraft(draft);
+
+      const response = await fetch("/api/generation-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: draft.id,
+          type: "generate-character-sheet",
+          input: {
+            projectId: draft.id,
+            characterType: draft.characterType,
+            style: draft.style,
+            colorTheme: draft.colorTheme,
+            costumeAndProps: draft.costumeAndProps,
+            personality: draft.personality,
+            mustKeepFeatures: [
+              draft.mustKeepFeatures,
+              referenceImages.length
+                ? `参照画像: ${referenceImages
+                    .map((image, index) => `${index + 1}. ${image.name} (${image.url})`)
+                    .join(" / ")}。アップロード済み参照画像を優先して、顔・体型・色・衣装・小物を合わせる。`
+                : "参照画像なし。キャラクター概要、絵のタッチ、線の太さ、維持する特徴だけで一貫したキャラクターシートを作る。",
+            ].join(" "),
+            referenceImages,
+            referenceImageName: primaryReferenceImage?.name,
+            referenceImageUrl: primaryReferenceImage?.url,
+            referenceImageMimeType: primaryReferenceImage?.mimeType,
+            referenceImageSizeBytes: primaryReferenceImage?.sizeBytes,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? `HTTP ${response.status}`);
+      }
+
+      toast.success("キャラクターシート生成を開始しました");
+      router.push(`/app/projects/${encodeURIComponent(draft.id)}`);
+    } catch (error) {
+      saveProjectDraft({
+        ...draft,
+        status: "draft",
+        updatedAt: new Date().toISOString(),
+      });
+      toast.error(error instanceof Error ? error.message : "生成ジョブの開始に失敗しました");
+      setIsCreatingSheet(false);
+    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    createProject();
+    createCharacterSheet();
   };
 
   return (
@@ -162,10 +273,13 @@ export function NewProjectWorkspace() {
           <Link href="/app/projects">一覧へ戻る</Link>
         </Button>
       }
-      description="まずキャラクターシートを作成し、その同じキャラから複数のスタンプセットへ展開します。"
+      description="ここではキャラクターの見た目だけを作ります。スタンプ数やセリフはキャラクター承認後、スタンプ作成画面で設定します。"
       title="キャラクターシート作成"
     >
-      <form className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]" onSubmit={handleSubmit}>
+      <div className="mb-6">
+        <ProductionFlow variant="new-character" />
+      </div>
+      <form className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" onSubmit={handleSubmit}>
         <section className="flex min-w-0 flex-col gap-6">
           <Card className="rounded-xl bg-white shadow-sm">
             <CardHeader>
@@ -173,67 +287,111 @@ export function NewProjectWorkspace() {
                 <Badge className="bg-green-100 text-green-700" variant="secondary">
                   1
                 </Badge>
-                <CardTitle className="text-xl font-black">企画入力</CardTitle>
+                <CardTitle className="text-xl font-black">キャラクターの材料</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
+              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
                 キャラクターシート名
                 <Input
                   className="bg-white"
-                  onChange={(event) => {
-                    setProjectName(event.target.value);
-                    setTitleJa(event.target.value);
-                  }}
-                  value={projectName}
+                  onChange={(event) => setSheetName(event.target.value)}
+                  placeholder="例: 魔法うさぎ"
+                  value={sheetName}
                 />
               </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                制作名義
-                <Input
-                  className="bg-white"
-                  onChange={(event) => {
-                    setStudioName(event.target.value);
-                    setCreatorName(event.target.value);
-                    setCopyright(`© ${event.target.value}`);
-                  }}
-                  value={studioName}
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                キャラクター種別
-                <Input className="bg-white" onChange={(event) => setCharacterType(event.target.value)} value={characterType} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                テイスト
-                <Input className="bg-white" onChange={(event) => setStyle(event.target.value)} value={style} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                色味
-                <Input className="bg-white" onChange={(event) => setColorTheme(event.target.value)} value={colorTheme} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                衣装・小物
-                <Input
-                  className="bg-white"
-                  onChange={(event) => setCostumeAndProps(event.target.value)}
-                  value={costumeAndProps}
-                />
-              </label>
+              <div className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
+                参照画像
+                <div className="rounded-xl border border-dashed bg-green-50/35 p-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#06c755] shadow-xs">
+                        <Upload className="size-5" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-zinc-900">
+                          {referenceImages.length
+                            ? `参照画像 ${referenceImages.length}/${maxReferenceImageCount}枚`
+                            : "キャラクターの参考画像をアップロード（任意）"}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+                          画像なしでも作成できます。使う場合はPNG / JPEG / WebP、1枚5MB以内、最大3枚まで。
+                        </p>
+                        {referenceImageError ? (
+                          <p className="mt-2 text-xs font-bold text-amber-700">{referenceImageError}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <input
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      id="reference-image-upload"
+                      multiple
+                      onChange={handleReferenceImageChange}
+                      type="file"
+                    />
+                    <label
+                      aria-disabled={remainingReferenceImageSlots <= 0 || isUploadingReferenceImage}
+                      className={
+                        remainingReferenceImageSlots <= 0
+                          ? "inline-flex h-10 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md bg-zinc-200 px-4 text-sm font-black text-zinc-500"
+                          : "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-[#06c755] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#05b64d]"
+                      }
+                      htmlFor={remainingReferenceImageSlots <= 0 ? undefined : "reference-image-upload"}
+                    >
+                      {isUploadingReferenceImage ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Upload className="size-4" aria-hidden="true" />
+                      )}
+                      {referenceImages.length ? "画像を追加" : "画像を選択"}
+                    </label>
+                  </div>
+                  {referenceImages.length ? (
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                      {referenceImages.map((image, index) => (
+                        <div
+                          className="relative grid w-44 shrink-0 grid-cols-[56px_1fr] gap-2 rounded-lg border bg-white p-2"
+                          key={image.url}
+                        >
+                          <div className="flex size-14 items-center justify-center overflow-hidden rounded-md bg-zinc-50">
+                            <img
+                              alt={`アップロード済み参照画像 ${index + 1}`}
+                              className="size-full object-contain"
+                              src={image.url}
+                            />
+                          </div>
+                          <div className="min-w-0 pr-5">
+                            <p className="truncate text-xs font-black text-zinc-800">
+                              {index + 1}. {image.name}
+                            </p>
+                            <p className="mt-1 text-[11px] font-bold leading-4 text-muted-foreground">
+                              {image.mimeType}
+                              <br />
+                              {formatFileSize(image.sizeBytes)}
+                            </p>
+                          </div>
+                          <button
+                            aria-label={`${image.name}を削除`}
+                            className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full border bg-white text-zinc-600 shadow-sm transition hover:border-red-200 hover:text-red-600"
+                            onClick={() => removeReferenceImage(image.url)}
+                            type="button"
+                          >
+                            <X className="size-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
               <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
-                性格・雰囲気
+                キャラクター概要
                 <textarea
                   className={textareaClassName}
-                  onChange={(event) => setPersonality(event.target.value)}
-                  value={personality}
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
-                用途・利用シーン
-                <textarea
-                  className={textareaClassName}
-                  onChange={(event) => setUsageScene(event.target.value)}
-                  value={usageScene}
+                  onChange={(event) => setCharacterDescription(event.target.value)}
+                  placeholder="例: 白いうさぎのマジシャン。明るく丁寧で、少しお茶目。日常会話で使いやすい雰囲気。"
+                  value={characterDescription}
                 />
               </label>
             </CardContent>
@@ -245,126 +403,59 @@ export function NewProjectWorkspace() {
                 <Badge className="bg-green-100 text-green-700" variant="secondary">
                   2
                 </Badge>
-                <CardTitle className="text-xl font-black">スタンプ構成</CardTitle>
+                <CardTitle className="text-xl font-black">生成スタイルと固定条件</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
               <div>
-                <p className="text-sm font-black text-zinc-800">スタンプ数</p>
-                <div className="mt-3 grid grid-cols-5 gap-2">
-                  {stickerCounts.map((count) => (
-                    <Button
-                      className={stickerCount === count ? "line-bg" : "bg-white"}
-                      key={count}
-                      onClick={() => setStickerCount(count)}
-                      type="button"
-                      variant={stickerCount === count ? "default" : "outline"}
-                    >
-                      {count}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-black text-zinc-800">文字モード</p>
-                <div className="mt-3 grid gap-3 md:grid-cols-3">
-                  {textModeOptions.map((option) => (
+                <p className="text-sm font-black text-zinc-800">絵のタッチ</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {characterArtStyles.map((styleOption) => (
                     <button
                       className={
-                        textMode === option.value
-                          ? "rounded-xl border border-green-300 bg-green-50 p-4 text-left shadow-sm"
-                          : "rounded-xl border bg-white p-4 text-left transition hover:border-green-200 hover:bg-green-50/40"
+                        artStyle === styleOption
+                          ? "rounded-xl border border-green-300 bg-green-50 p-2 text-left text-sm font-black text-green-700 shadow-sm"
+                          : "rounded-xl border bg-white p-2 text-left text-sm font-bold text-zinc-700 transition hover:border-green-200 hover:bg-green-50/40"
                       }
-                      key={option.value}
-                      onClick={() => setTextMode(option.value)}
+                      key={styleOption}
+                      onClick={() => setArtStyle(styleOption)}
                       type="button"
                     >
-                      <span className="text-sm font-black text-zinc-950">{option.label}</span>
-                      <span className="mt-2 block text-xs font-semibold leading-5 text-muted-foreground">
-                        {option.description}
-                      </span>
+                      <ArtStyleReferencePreview className="aspect-[128/86] w-full" styleName={styleOption} />
+                      <span className="mt-2 block px-1">{styleOption}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <div>
-                <p className="text-sm font-black text-zinc-800">セリフテンプレート</p>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  {templateSets.map((template) => (
-                    <button
-                      className={
-                        templateId === template.id
-                          ? "rounded-xl border border-green-300 bg-green-50 p-4 text-left"
-                          : "rounded-xl border bg-zinc-50 p-4 text-left transition hover:border-green-200 hover:bg-green-50/40"
-                      }
-                      key={template.id}
-                      onClick={() => handleTemplateSelect(template.id, template.stickerCount)}
-                      type="button"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-black text-zinc-950">{template.name}</span>
-                        <Badge variant="secondary">{template.stickerCount}個</Badge>
-                      </div>
-                      <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">{template.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          <Card className="rounded-xl bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className="bg-green-100 text-green-700" variant="secondary">
-                  3
-                </Badge>
-                <CardTitle className="text-xl font-black">Creators Market向け申請情報</CardTitle>
+              <div>
+                <p className="text-sm font-black text-zinc-800">線の太さ</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {lineWeightOptions.map((weight) => (
+                    <button
+                      className={
+                        lineWeight === weight
+                          ? "rounded-xl border border-green-300 bg-green-50 p-2 text-sm font-black text-green-700 shadow-sm"
+                          : "rounded-xl border bg-white p-2 text-sm font-bold text-zinc-700 transition hover:border-green-200 hover:bg-green-50/40"
+                      }
+                      key={weight}
+                      onClick={() => setLineWeight(weight)}
+                      type="button"
+                    >
+                      <LineWeightReferencePreview className="aspect-[128/64] w-full" weight={weight} />
+                      <span className="mt-2 block">{weight}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                タイトル（日本語）
-                <Input className="bg-white" onChange={(event) => setTitleJa(event.target.value)} value={titleJa} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                タイトル（英語・任意）
-                <Input className="bg-white" onChange={(event) => setTitleEn(event.target.value)} value={titleEn} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
-                説明文（日本語）
+                維持する特徴
                 <textarea
                   className={textareaClassName}
-                  onChange={(event) => setDescriptionJa(event.target.value)}
-                  value={descriptionJa}
+                  onChange={(event) => setMustKeepFeatures(event.target.value)}
+                  placeholder="例: ピンクの耳、黒い帽子、オレンジの花飾り、丸い黒目は必ず維持。別衣装や別キャラクターに見える変更はしない。"
+                  value={mustKeepFeatures}
                 />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700 md:col-span-2">
-                説明文（英語・任意）
-                <textarea
-                  className={textareaClassName}
-                  onChange={(event) => setDescriptionEn(event.target.value)}
-                  value={descriptionEn}
-                />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                クリエイター名
-                <Input className="bg-white" onChange={(event) => setCreatorName(event.target.value)} value={creatorName} />
-              </label>
-              <label className="flex flex-col gap-2 text-sm font-bold text-zinc-700">
-                コピーライト
-                <Input className="bg-white" onChange={(event) => setCopyright(event.target.value)} value={copyright} />
-              </label>
-              <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900 md:col-span-2">
-                <input
-                  checked={containsAiGeneratedContent}
-                  className="mt-1 size-4 accent-green-600"
-                  onChange={(event) => setContainsAiGeneratedContent(event.target.checked)}
-                  type="checkbox"
-                />
-                <span>
-                  AI生成またはAI補助で作られたコンテンツを含みます。販売画面でAI生成コンテンツに関する表記が表示される可能性があります。
-                </span>
               </label>
             </CardContent>
           </Card>
@@ -381,35 +472,41 @@ export function NewProjectWorkspace() {
             <CardContent className="flex flex-col gap-4">
               <div className="rounded-xl border bg-zinc-50 p-4">
                 <p className="text-xs font-black text-muted-foreground">キャラクターシート</p>
-                <p className="mt-2 text-lg font-black text-zinc-950">{projectName || "未入力"}</p>
-                <p className="mt-1 text-sm font-semibold text-muted-foreground">{studioName || "制作名義未入力"}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border bg-white p-4">
-                  <Grid3X3 className="line-green" aria-hidden="true" />
-                  <p className="mt-2 text-2xl font-black">{stickerCount}個</p>
-                  <p className="text-xs font-bold text-muted-foreground">静止画スタンプ</p>
-                </div>
-                <div className="rounded-xl border bg-white p-4">
-                  <FileArchive className="line-green" aria-hidden="true" />
-                  <p className="mt-2 text-2xl font-black">ZIP</p>
-                  <p className="text-xs font-bold text-muted-foreground">Creators Market用</p>
-                </div>
+                <p className="mt-2 text-lg font-black text-zinc-950">{sheetName || "未入力"}</p>
               </div>
               <div className="rounded-xl border bg-white p-4">
-                <p className="text-sm font-black text-zinc-800">セリフプレビュー</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {phrases.slice(0, 12).map((phrase) => (
-                    <span className="rounded-full border bg-zinc-50 px-3 py-1 text-xs font-bold" key={phrase}>
-                      {phrase}
-                    </span>
-                  ))}
-                  {phrases.length > 12 ? (
-                    <span className="rounded-full border bg-green-50 px-3 py-1 text-xs font-black text-green-700">
-                      +{phrases.length - 12}
-                    </span>
-                  ) : null}
-                </div>
+                <p className="text-xs font-black text-muted-foreground">参照画像</p>
+                {referenceImages.length ? (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {referenceImages.map((image, index) => (
+                      <div className="min-w-0" key={image.url}>
+                        <img
+                          alt={`参照画像サムネイル ${index + 1}`}
+                          className="aspect-square w-full rounded-lg border object-cover"
+                          src={image.url}
+                        />
+                        <p className="mt-1 truncate text-[11px] font-black text-zinc-950">{image.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm font-bold text-zinc-500">任意・未アップロード</p>
+                )}
+              </div>
+              <div className="rounded-xl border bg-white p-4">
+                <Palette className="line-green" aria-hidden="true" />
+                <p className="mt-2 text-sm font-black text-zinc-950">{artStyle || "絵のタッチ未選択"}</p>
+                <p className="mt-1 text-xs font-bold text-muted-foreground">
+                  線の太さ: {lineWeight || "未選択"}
+                </p>
+              </div>
+              <div className="rounded-xl border bg-white p-4">
+                <p className="text-sm font-black text-zinc-800">次の流れ</p>
+                <ol className="mt-3 space-y-2 text-sm font-semibold leading-6 text-muted-foreground">
+                  <li>1. キャラクターシートを生成</li>
+                  <li>2. 見た目を確認して承認</li>
+                  <li>3. 一覧のスタンプ作成ボタンからセリフと動きを設定</li>
+                </ol>
               </div>
             </CardContent>
           </Card>
@@ -417,7 +514,7 @@ export function NewProjectWorkspace() {
           <Card className="rounded-xl bg-white shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-black">
-                <ShieldCheck className="text-emerald-600" aria-hidden="true" />
+                <WandSparkles className="text-emerald-600" aria-hidden="true" />
                 入力チェック
               </CardTitle>
             </CardHeader>
@@ -432,16 +529,19 @@ export function NewProjectWorkspace() {
                   <span className={item.valid ? "text-zinc-700" : "text-amber-700"}>{item.label}</span>
                 </div>
               ))}
-              <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-semibold leading-5 text-amber-900">
-                本サービスはLINE公式サービスではありません。審査通過を保証するものではありません。
+              <div className="mt-2 rounded-xl border border-green-200 bg-green-50 p-4 text-xs font-semibold leading-5 text-green-900">
+                この画面ではスタンプ数やセリフは設定しません。
               </div>
               <Button
                 className="mt-2 h-12 line-bg text-base font-black"
                 disabled={!canSubmit}
-                onClick={createProject}
+                onClick={createCharacterSheet}
                 type="button"
               >
-                キャラクターシートを作成
+                {isCreatingSheet ? (
+                  <Loader2 className="animate-spin" data-icon="inline-start" />
+                ) : null}
+                {isCreatingSheet ? "生成を開始しています" : "作成して生成開始"}
                 <ArrowRight data-icon="inline-end" />
               </Button>
             </CardContent>

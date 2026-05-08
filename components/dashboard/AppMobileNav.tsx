@@ -1,19 +1,22 @@
 import Link from "next/link";
 
 import {
-  appSidebarMenuItems,
+  getAppSidebarMenuItems,
   type AppSidebarActiveItem,
 } from "@/components/dashboard/AppSidebar";
 
 type AppMobileNavProps = {
   active: AppSidebarActiveItem;
+  projectId?: string;
 };
 
 export function AppMobileNav({ active }: AppMobileNavProps) {
+  const menuItems = getAppSidebarMenuItems();
+
   return (
     <nav className="border-b bg-white px-4 py-3 lg:hidden" aria-label="アプリ内ナビゲーション">
       <div className="scrollbar-hidden flex gap-2 overflow-x-auto pb-1">
-        {appSidebarMenuItems.map((item) => (
+        {menuItems.map((item) => (
           <Link
             aria-current={active === item.label ? "page" : undefined}
             className={

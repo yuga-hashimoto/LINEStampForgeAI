@@ -1,51 +1,44 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
   ImagePlus,
   Loader2,
-  RefreshCw,
-  Scissors,
+  Upload,
   WandSparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getGeneratedProjectAssetUrls } from "@/lib/generated-assets";
-import type { Project, StickerCount, StickerPhrase, TextMode } from "@/lib/types";
+import { ArtStyleReferencePreview, LineWeightReferencePreview } from "@/components/ui/StyleReferencePreview";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { characterArtStyles, lineWeightOptions } from "@/lib/constants";
+import type { CharacterDesignDraft, Project, ReferenceImageAsset } from "@/lib/types";
 
 type GenerationJobStatus = "queued" | "running" | "succeeded" | "failed" | "canceled";
-
-type GenerationJobType =
-  | "generate-character-sheet"
-  | "generate-sticker-sheet"
-  | "regenerate-sticker-cell";
 
 type GenerationJobView = {
   id: string;
   projectId: string;
-  type: GenerationJobType;
+  type: "generate-character-sheet" | "generate-sticker-sheet" | "regenerate-sticker-cell";
   status: GenerationJobStatus;
   errorMessage?: string;
   updatedAt: string;
-  completedAt?: string;
 };
 
 type GenerationStudioCardProps = {
   project: Project;
-  stickerCount: StickerCount;
-  textMode: TextMode;
-  phrases: StickerPhrase[];
+  characterDesign: CharacterDesignDraft;
+  isApproved: boolean;
+  onChange: (nextDesign: CharacterDesignDraft) => void;
+  onApprove: () => void;
   onAssetsUpdated: () => void;
-};
-
-const jobLabels: Record<GenerationJobType, string> = {
-  "generate-character-sheet": "キャラクターシート生成",
-  "generate-sticker-sheet": "スタンプシート生成",
-  "regenerate-sticker-cell": "特定コマ再生成",
+  onGenerationStateChange?: (state: "generating" | "succeeded" | "failed") => void;
+  assetsReady: boolean;
 };
 
 const statusLabels: Record<GenerationJobStatus, string> = {
@@ -56,22 +49,52 @@ const statusLabels: Record<GenerationJobStatus, string> = {
   canceled: "停止",
 };
 
+function getReferenceImages(characterDesign: CharacterDesignDraft): ReferenceImageAsset[] {
+  if (characterDesign.referenceImages?.length) {
+    return characterDesign.referenceImages.slice(0, 3);
+  }
+
+  if (characterDesign.referenceImageName && characterDesign.referenceImageUrl) {
+    return [
+      {
+        name: characterDesign.referenceImageName,
+        url: characterDesign.referenceImageUrl,
+        mimeType: characterDesign.referenceImageMimeType ?? "image/png",
+        sizeBytes: characterDesign.referenceImageSizeBytes,
+      },
+    ];
+  }
+
+  return [];
+}
+
 export function GenerationStudioCard({
   project,
-  stickerCount,
-  textMode,
-  phrases,
+  characterDesign,
+  isApproved,
+  onChange,
+  onApprove,
   onAssetsUpdated,
+  onGenerationStateChange,
+  assetsReady,
 }: GenerationStudioCardProps) {
   const [jobs, setJobs] = useState<GenerationJobView[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState<GenerationJobType | null>(null);
-  const [characterBrief, setCharacterBrief] = useState(
-    "白いうさぎのマジシャン。黒いシルクハット、オレンジの花飾り、黒とオレンジのマント、丸い黒目、ピンクの耳内側を必ず維持。日常会話で使いやすいかわいい表情。"
-  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const previousJobsRef = useRef<GenerationJobView[]>([]);
+  const referenceImages = getReferenceImages(characterDesign);
+  const primaryReferenceImage = referenceImages[0];
 
-  const latestJob = jobs[0];
-  const activeJob = jobs.find((job) => job.status === "queued" || job.status === "running");
-  const assets = useMemo(() => getGeneratedProjectAssetUrls(project.id), [project.id]);
+  const activeJob = jobs.find(
+    (job) =>
+      job.type === "generate-character-sheet" &&
+      (job.status === "queued" || job.status === "running")
+  );
+  const latestCharacterJob = jobs.find((job) => job.type === "generate-character-sheet");
+  const isProjectGenerating = project.status === "generating";
+
+  const updateDesign = (patch: Partial<CharacterDesignDraft>) => {
+    onChange({ ...characterDesign, ...patch });
+  };
 
   const refreshJobs = useCallback(async () => {
     const response = await fetch(`/api/generation-jobs?projectId=${encodeURIComponent(project.id)}`, {
@@ -86,12 +109,32 @@ export function GenerationStudioCard({
     const sortedJobs = [...result.jobs].sort(
       (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
-    setJobs(sortedJobs);
+    const hadActiveCharacterJob = previousJobsRef.current.some(
+      (job) =>
+        job.type === "generate-character-sheet" &&
+        (job.status === "queued" || job.status === "running")
+    );
 
-    if (sortedJobs.some((job) => job.status === "succeeded")) {
+    setJobs(sortedJobs);
+    previousJobsRef.current = sortedJobs;
+
+    const latestCharacter = sortedJobs.find((job) => job.type === "generate-character-sheet");
+    const hasSucceededCharacterJob = sortedJobs.some(
+      (job) => job.type === "generate-character-sheet" && job.status === "succeeded"
+    );
+
+    if (latestCharacter?.status === "queued" || latestCharacter?.status === "running") {
+      onGenerationStateChange?.("generating");
+    } else if (latestCharacter?.status === "failed") {
+      onGenerationStateChange?.("failed");
+    } else if (hasSucceededCharacterJob) {
+      onGenerationStateChange?.("succeeded");
+    }
+
+    if ((hadActiveCharacterJob || !assetsReady) && hasSucceededCharacterJob) {
       onAssetsUpdated();
     }
-  }, [onAssetsUpdated, project.id]);
+  }, [assetsReady, onAssetsUpdated, onGenerationStateChange, project.id]);
 
   useEffect(() => {
     void refreshJobs().catch(() => undefined);
@@ -109,36 +152,39 @@ export function GenerationStudioCard({
     return () => window.clearInterval(id);
   }, [activeJob, refreshJobs]);
 
-  const createGenerationJob = async (type: Exclude<GenerationJobType, "regenerate-sticker-cell">) => {
-    setIsSubmitting(type);
+  const createCharacterJob = async () => {
+    setIsSubmitting(true);
 
     try {
-      const input =
-        type === "generate-character-sheet"
-          ? {
-              projectId: project.id,
-              characterType: "白うさぎ",
-              style: "LINE Creators Market向けのかわいいマジシャン風スタンプキャラクター",
-              colorTheme: "白、黒、LINEグリーン、ピンク、オレンジ、黄色",
-              costumeAndProps: "黒いシルクハット、オレンジの花飾り、黒とオレンジのマント、星のステッキ",
-              personality: "明るく丁寧。あいさつ、感謝、確認、応援に使いやすい表情。",
-              mustKeepFeatures: characterBrief,
-            }
-          : {
-              projectId: project.id,
-              stickerCount,
-              textMode,
-              phrases: phrases.slice(0, stickerCount),
-              characterSheetPath: `public${assets.characterSheet}`,
-            };
-
       const response = await fetch("/api/generation-jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId: project.id,
-          type,
-          input,
+          type: "generate-character-sheet",
+          input: {
+            projectId: project.id,
+            characterType: characterDesign.characterType,
+            style: `${characterDesign.artStyle} / 線の太さ: ${characterDesign.lineWeight}`,
+            colorTheme: characterDesign.colorTheme,
+            costumeAndProps: characterDesign.costumeAndProps,
+            personality: `${characterDesign.description} ${characterDesign.personality}`,
+            mustKeepFeatures: [
+              characterDesign.mustKeepFeatures,
+              referenceImages.length
+                ? `参照画像: ${referenceImages
+                    .map((image, index) => `${index + 1}. ${image.name} (${image.url})`)
+                    .join(" / ")}。アップロード済み参照画像を優先して、顔・体型・色・衣装・小物を合わせる。`
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" "),
+            referenceImages,
+            referenceImageName: primaryReferenceImage?.name,
+            referenceImageUrl: primaryReferenceImage?.url,
+            referenceImageMimeType: primaryReferenceImage?.mimeType,
+            referenceImageSizeBytes: primaryReferenceImage?.sizeBytes,
+          },
         }),
       });
 
@@ -148,11 +194,12 @@ export function GenerationStudioCard({
       }
 
       await refreshJobs();
-      toast.success(`${jobLabels[type]}をキューに追加しました`);
+      onGenerationStateChange?.("generating");
+      toast.success("キャラクターシート生成を開始しました");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "生成ジョブの作成に失敗しました");
     } finally {
-      setIsSubmitting(null);
+      setIsSubmitting(false);
     }
   };
 
@@ -163,173 +210,285 @@ export function GenerationStudioCard({
           <div>
             <CardTitle className="flex items-center gap-2 text-xl font-black">
               <WandSparkles className="line-green" aria-hidden="true" />
-              キャラクターシートから作る
+              キャラクターデザインを作る
             </CardTitle>
             <p className="mt-2 text-sm font-semibold leading-6 text-muted-foreground">
-              まずキャラクターシートを固定し、その同じキャラからスタンプシート、切り出しPNG、ZIPまで作ります。
+              ここではスタンプ数やセリフを決めません。キャラクターの見た目だけを固め、承認後にスタンプ制作へ進みます。
             </p>
           </div>
-          <div className="rounded-full border border-green-200 bg-white px-3 py-1 text-xs font-black text-green-700">
-            imagegen接続済み
-          </div>
+          <Badge
+            className={
+              isApproved
+                ? "border-green-200 bg-green-50 text-green-700"
+                : "border-amber-200 bg-amber-50 text-amber-800"
+            }
+            variant="outline"
+          >
+            {isApproved ? "キャラクター承認済み" : "キャラクター未承認"}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-5">
+
+      <CardContent className="grid gap-5 p-5">
+        {activeJob || isProjectGenerating ? (
+          <GenerationProgressNotice job={activeJob} />
+        ) : latestCharacterJob?.status === "failed" ? (
+          <GenerationFailedNotice job={latestCharacterJob} />
+        ) : null}
+
+        <div className="grid gap-2 text-sm font-black text-zinc-800">
+          参照画像
+          <div className="grid gap-3 rounded-lg border bg-white p-3 sm:grid-cols-[minmax(0,1fr)_210px]">
+            <div>
+              <p className="text-sm font-black text-zinc-800">
+                {referenceImages.length ? `${referenceImages.length}/3枚を使用` : "未設定"}
+              </p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+                顔、体型、色、衣装、小物は参照画像を優先します。足りない固定条件だけ下の「維持する特徴」に書きます。
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-1">
+              {referenceImages.length ? (
+                referenceImages.map((image, index) => (
+                  <div className="grid min-w-0 grid-cols-[48px_1fr] gap-2 rounded-lg border bg-zinc-50 p-2" key={image.url}>
+                    <div className="flex aspect-square items-center justify-center overflow-hidden rounded-md bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt={`アップロード済み参照画像 ${index + 1}`}
+                        className="size-full object-contain"
+                        src={image.url}
+                      />
+                    </div>
+                    <div className="min-w-0 self-center">
+                      <p className="truncate text-xs font-black text-zinc-800">
+                        {index + 1}. {image.name}
+                      </p>
+                      <p className="text-[11px] font-semibold text-muted-foreground">{image.mimeType}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex aspect-square items-center justify-center rounded-lg border bg-zinc-50">
+                  <Upload className="size-7 text-muted-foreground" aria-hidden="true" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <label className="grid gap-2 text-sm font-black text-zinc-800">
-          キャラクター固定メモ
+          キャラクター概要
           <textarea
-            className="min-h-20 rounded-xl border bg-white px-3 py-3 text-sm font-semibold leading-6 text-zinc-700 outline-none focus-visible:border-green-400 focus-visible:ring-4 focus-visible:ring-green-100"
-            onChange={(event) => setCharacterBrief(event.target.value)}
-            value={characterBrief}
+            className="min-h-24 rounded-xl border bg-white px-3 py-3 text-sm font-semibold leading-6 text-zinc-700 outline-none focus-visible:border-green-400 focus-visible:ring-4 focus-visible:ring-green-100"
+            onChange={(event) => updateDesign({ description: event.target.value })}
+            value={characterDesign.description}
           />
         </label>
 
-        <div className="grid gap-3">
-          <GenerationStep
-            description="参照用の正面・横・後ろ・表情差分を作成"
-            icon={<ImagePlus aria-hidden="true" />}
-            label="1. キャラ作成"
-          >
-            <Button
-              className="h-auto min-h-11 w-full whitespace-normal rounded-xl px-4 py-2 text-sm font-black leading-5 line-bg"
-              disabled={Boolean(activeJob) || isSubmitting !== null}
-              onClick={() => createGenerationJob("generate-character-sheet")}
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <p className="text-sm font-black text-zinc-800">絵のタッチ</p>
+            <ToggleGroup
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+              onValueChange={(value) => value && updateDesign({ artStyle: value })}
+              type="single"
+              value={characterDesign.artStyle}
             >
-              {isSubmitting === "generate-character-sheet" ? (
-                <Loader2 className="animate-spin" data-icon="inline-start" />
-              ) : (
-                <WandSparkles data-icon="inline-start" />
-              )}
-              キャラ生成
-            </Button>
-          </GenerationStep>
-
-          <GenerationStep
-            description={`${stickerCount}個 / ${textModeLabel(textMode)}で同一キャラのスタンプを作成`}
-            icon={<WandSparkles aria-hidden="true" />}
-            label="2. スタンプ生成"
-          >
-            <Button
-              className="h-auto min-h-11 w-full whitespace-normal rounded-xl px-4 py-2 text-sm font-black leading-5 line-bg"
-              disabled={Boolean(activeJob) || isSubmitting !== null}
-              onClick={() => createGenerationJob("generate-sticker-sheet")}
+              {characterArtStyles.map((style) => (
+                <ToggleGroupItem
+                  className="h-auto min-h-32 flex-col items-stretch justify-start rounded-xl border bg-white p-2 text-left text-xs font-black data-[state=on]:border-[#06C755] data-[state=on]:bg-green-50 data-[state=on]:text-green-700 sm:text-sm"
+                  key={style}
+                  value={style}
+                >
+                  <ArtStyleReferencePreview className="aspect-[128/86] w-full" styleName={style} />
+                  <span className="mt-2 block px-1">{style}</span>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+          <div className="grid gap-2">
+            <p className="text-sm font-black text-zinc-800">線の太さ</p>
+            <ToggleGroup
+              className="grid grid-cols-3 gap-3"
+              onValueChange={(value) => value && updateDesign({ lineWeight: value })}
+              type="single"
+              value={characterDesign.lineWeight}
             >
-              {isSubmitting === "generate-sticker-sheet" ? (
-                <Loader2 className="animate-spin" data-icon="inline-start" />
-              ) : (
-                <WandSparkles data-icon="inline-start" />
-              )}
-              スタンプを生成
-            </Button>
-          </GenerationStep>
-
-          <GenerationStep
-            description="生成シートをセルに切り出し、ZIP書き出しで使うPNGに更新"
-            icon={<Scissors aria-hidden="true" />}
-            label="3. 切り出し反映"
-          >
-            <Button
-              className="h-auto min-h-11 w-full whitespace-normal rounded-xl px-4 py-2 text-sm font-black leading-5"
-              onClick={() => {
-                void refreshJobs()
-                  .then(() => toast.success("生成状態を更新しました"))
-                  .catch(() => toast.error("生成状態を取得できませんでした"));
-              }}
-              variant="outline"
-            >
-              <RefreshCw data-icon="inline-start" />
-              状態を更新
-            </Button>
-          </GenerationStep>
+              {lineWeightOptions.map((weight) => (
+                <ToggleGroupItem
+                  className="h-auto min-h-28 flex-col items-stretch justify-start rounded-xl border bg-white p-2 text-sm font-black data-[state=on]:border-[#06C755] data-[state=on]:bg-green-50 data-[state=on]:text-green-700"
+                  key={weight}
+                  value={weight}
+                >
+                  <LineWeightReferencePreview className="aspect-[128/64] w-full" weight={weight} />
+                  <span className="mt-2 block text-center">{weight}</span>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
         </div>
 
-        <div className="rounded-xl border bg-zinc-50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-black text-zinc-800">生成ジョブ</p>
-            <p className="text-xs font-semibold text-muted-foreground">
-              workerを起動している間に順番に処理されます。
+        <label className="grid gap-2 text-sm font-black text-zinc-800">
+          維持する特徴
+          <textarea
+            className="min-h-20 rounded-xl border bg-white px-3 py-3 text-sm font-semibold leading-6 text-zinc-700 outline-none focus-visible:border-green-400 focus-visible:ring-4 focus-visible:ring-green-100"
+            onChange={(event) => updateDesign({ mustKeepFeatures: event.target.value })}
+            value={characterDesign.mustKeepFeatures}
+          />
+        </label>
+
+        <div className="grid gap-3 rounded-xl border bg-zinc-50 p-4 md:grid-cols-[1fr_180px_180px] md:items-center">
+          <div>
+            <p className="text-sm font-black text-zinc-900">生成と承認</p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+              生成結果は右側に表示されます。気になる点があれば条件を微修正して再生成し、問題がなければ承認してください。
             </p>
           </div>
-          {latestJob ? (
-            <div className="mt-3 grid gap-2">
-              {jobs.slice(0, 3).map((job) => (
-                <div
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2 text-sm"
-                  key={job.id}
-                >
-                  <div className="flex items-center gap-2 font-bold">
-                    {job.status === "succeeded" ? (
-                      <CheckCircle2 className="size-4 text-green-600" aria-hidden="true" />
-                    ) : job.status === "failed" ? (
-                      <AlertTriangle className="size-4 text-amber-600" aria-hidden="true" />
-                    ) : (
-                      <Loader2 className="size-4 animate-spin text-green-600" aria-hidden="true" />
-                    )}
-                    <span>{jobLabels[job.type]}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full border bg-zinc-50 px-2 py-1 text-xs font-black">
-                      {statusLabels[job.status]}
-                    </span>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {new Intl.DateTimeFormat("ja-JP", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(new Date(job.updatedAt))}
-                    </span>
-                  </div>
-                  {job.errorMessage ? (
-                    <p className="w-full text-xs font-semibold text-amber-700">{job.errorMessage}</p>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-3 rounded-lg border border-dashed bg-white p-3 text-sm font-semibold leading-6 text-muted-foreground">
-              まだ生成ジョブはありません。「キャラ作成」または「このキャラで作る」から開始できます。
-            </p>
-          )}
+          <Button
+            className="h-auto min-h-11 rounded-xl px-4 py-2 text-sm font-black line-bg"
+            disabled={Boolean(activeJob) || isSubmitting}
+            onClick={createCharacterJob}
+          >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin" data-icon="inline-start" />
+            ) : (
+              <ImagePlus data-icon="inline-start" />
+            )}
+            {assetsReady ? "この条件で再生成" : "シート生成"}
+          </Button>
+          <Button
+            className="h-auto min-h-11 rounded-xl px-4 py-2 text-sm font-black"
+            disabled={!assetsReady}
+            onClick={onApprove}
+            variant={isApproved ? "outline" : "default"}
+          >
+            <CheckCircle2 data-icon="inline-start" />
+            {isApproved ? "承認済み" : assetsReady ? "このデザインで承認" : "生成後に承認"}
+          </Button>
         </div>
+
+        <JobList
+          isProjectGenerating={isProjectGenerating}
+          jobs={jobs}
+          latestCharacterJob={latestCharacterJob}
+        />
       </CardContent>
     </Card>
   );
 }
 
-function GenerationStep({
-  children,
-  description,
-  icon,
-  label,
-}: {
-  children: ReactNode;
-  description: string;
-  icon: ReactNode;
-  label: string;
-}) {
+function GenerationProgressNotice({ job }: { job?: GenerationJobView }) {
   return (
-    <div className="grid gap-4 rounded-xl border bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 text-base font-black text-zinc-950">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-green-50 text-green-700">
-            {icon}
+    <div className="overflow-hidden rounded-xl border border-green-200 bg-green-50">
+      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-[#06C755] shadow-xs">
+            <Loader2 className="size-5 animate-spin" aria-hidden="true" />
           </span>
-          {label}
+          <div>
+            <p className="text-base font-black text-green-900">
+              キャラクターシートを生成中です
+            </p>
+            <p className="mt-1 text-sm font-semibold leading-6 text-green-900/75">
+              {!job
+                ? "生成ジョブの状態を確認しています。画面を開いたままでも自動で更新されます。"
+                : job.status === "queued"
+                  ? "生成待ちキューに入りました。workerが順番に処理します。"
+                  : "画像生成を実行しています。完了するとプレビューへ自動反映されます。"}
+            </p>
+          </div>
         </div>
-        <p className="mt-3 text-sm font-semibold leading-6 text-muted-foreground">{description}</p>
+        <Badge className="w-fit border-green-300 bg-white text-green-700" variant="outline">
+          {job ? statusLabels[job.status] : "生成準備中"}
+        </Badge>
       </div>
-      <div>{children}</div>
+      <div className="h-1.5 overflow-hidden bg-green-100">
+        <div className="h-full w-1/2 animate-pulse rounded-r-full bg-[#06C755]" />
+      </div>
     </div>
   );
 }
 
-function textModeLabel(mode: TextMode) {
-  if (mode === "ai") {
-    return "AI文字";
+function GenerationFailedNotice({ job }: { job: GenerationJobView }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" aria-hidden="true" />
+        <div>
+          <p className="text-base font-black text-amber-900">キャラクターシート生成に失敗しました</p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-amber-900/75">
+            {job.errorMessage ?? "条件を調整して、もう一度シート生成を実行してください。"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobList({
+  isProjectGenerating,
+  jobs,
+  latestCharacterJob,
+}: {
+  isProjectGenerating: boolean;
+  jobs: GenerationJobView[];
+  latestCharacterJob?: GenerationJobView;
+}) {
+  if (!jobs.length) {
+    return (
+      <p className="rounded-lg border border-dashed bg-white p-3 text-sm font-semibold leading-6 text-muted-foreground">
+        {isProjectGenerating
+          ? "生成ジョブを確認中です。少し待つと待機中または生成中の状態に更新されます。"
+          : "まだ生成ジョブはありません。条件を整えて「シート生成」から開始できます。"}
+      </p>
+    );
   }
 
-  if (mode === "overlay") {
-    return "あと乗せ";
-  }
+  return (
+    <div className="rounded-xl border bg-zinc-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-black text-zinc-800">キャラクター生成ジョブ</p>
+        {latestCharacterJob ? (
+          <p className="text-xs font-semibold text-muted-foreground">
+            最終更新 {formatJobTime(latestCharacterJob.updatedAt)}
+          </p>
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-2">
+        {jobs
+          .filter((job) => job.type === "generate-character-sheet")
+          .slice(0, 3)
+          .map((job) => (
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2 text-sm"
+              key={job.id}
+            >
+              <div className="flex items-center gap-2 font-bold">
+                {job.status === "succeeded" ? (
+                  <CheckCircle2 className="size-4 text-green-600" aria-hidden="true" />
+                ) : job.status === "failed" ? (
+                  <AlertTriangle className="size-4 text-amber-600" aria-hidden="true" />
+                ) : (
+                  <Loader2 className="size-4 animate-spin text-green-600" aria-hidden="true" />
+                )}
+                <span>キャラクターシート生成</span>
+              </div>
+              <span className="rounded-full border bg-zinc-50 px-2 py-1 text-xs font-black">
+                {statusLabels[job.status]}
+              </span>
+              {job.errorMessage ? (
+                <p className="w-full text-xs font-semibold text-amber-700">{job.errorMessage}</p>
+              ) : null}
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+}
 
-  return "ハイブリッド";
+function formatJobTime(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }

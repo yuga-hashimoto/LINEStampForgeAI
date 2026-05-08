@@ -92,3 +92,37 @@ export const phraseTemplateTexts = [
   "お願いします",
   "承知です",
 ];
+
+export const characterArtStyles = [
+  "LINEスタンプ向けポップ",
+  "ゆるかわ",
+  "手描き風",
+  "アニメ調",
+  "水彩ライト",
+  "シンプル線画",
+];
+
+export const lineWeightOptions = ["細め", "標準", "太め"];
+
+export const speechColorOptions = [
+  { label: "黒", value: "#111111" },
+  { label: "LINE緑", value: "#06C755" },
+  { label: "オレンジ", value: "#F97316" },
+  { label: "ピンク", value: "#EC4899" },
+  { label: "青", value: "#2563EB" },
+];
+
+export const speechShapeOptions = ["白縁文字", "ふきだし", "リボン", "丸ステッカー"];
+
+export const speechStyleOptions = ["太字ポップ", "丸ゴシック", "手書き風", "小さめ上品"];
+
+export const characterMotionOptions = [
+  "手を振る",
+  "おじぎ",
+  "杖を振る",
+  "ジャンプ",
+  "耳を下げる",
+  "胸に手を当てる",
+  "ドアから顔を出す",
+  "クラッカーを鳴らす",
+];
